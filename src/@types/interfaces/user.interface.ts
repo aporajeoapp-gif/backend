@@ -7,4 +7,5 @@ export interface IUser {
   role?: Role;
   permissions?: Permission[];
   isEmailVerified?: boolean;
+  status?: "active" | "deactive";
 }

@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 
 interface JwtPayload {
   userId: string;
+  name: string;
 }
 
 export const authMiddleware = (

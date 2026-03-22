@@ -17,16 +17,26 @@ export const login = async (req: Request, res: Response) => {
     return res.status(401).json({ message: "Invalid credentials" });
   }
 
-  const token = generateToken({ userId: user._id.toString() });
+  // 🔥 Check if user is deactivated (Admins can always log in)
+  if (user.status === "deactive" && user.role !== "admin") {
+    return res.status(403).json({
+      message: "Account deactivated. Please contact the administrator.",
+    });
+  }
 
-  res.json({ 
+  const token = generateToken({
+    userId: user._id.toString(),
+    name: user.name,
+  });
+
+  res.json({
     token,
     user: {
       id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
-      permissions: user.permissions
-    }
+      permissions: user.permissions,
+    },
   });
 };

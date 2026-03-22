@@ -6,7 +6,7 @@ import UserModel from "../../../models/user.model";
 export interface AuthenticatedRequest extends Request {
   user?: {
     userId: string;
-    name?: string;
+    name: string;
     role?: Role;
     permissions?: Permission[];
   };
@@ -33,24 +33,30 @@ export const authorize = (
         return res.status(404).json({ message: "User not found" });
       }
 
-     
+      // Attach name to req.user if not already present
+      if (req.user && !req.user.name) {
+        req.user.name = user.name;
+      }
+
+      // Admin bypass
       if (user.role === "admin") {
         return next();
       }
 
-
+      // Role check
       if (requiredRole && user.role !== requiredRole) {
         return res
           .status(403)
           .json({ message: `Forbidden: Required role ${requiredRole}` });
       }
 
-      
+      // Permission check
       if (requiredPermission) {
         const hasPermission =
           user.permissions?.includes(requiredPermission) ||
           user.permissions?.includes("*") ||
           false;
+          
         if (!hasPermission) {
           return res
             .status(403)
@@ -58,10 +64,6 @@ export const authorize = (
               message: `Forbidden: Required permission ${requiredPermission}`,
             });
         }
-      }
-
-      if (req.user) {
-        req.user.name = user.name;
       }
 
       next();

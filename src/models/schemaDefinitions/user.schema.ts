@@ -42,6 +42,11 @@ const userSchema = new Schema<IUser>(
       default: [],
     },
     isEmailVerified: SCHEMA_DEFINATION_PROPERTIES.optionalBoolean,
+    status: {
+      type: String,
+      enum: ["active", "deactive"],
+      default: "active",
+    },
   },
 
   GENERAL_SCHEMA_OPTIONS,

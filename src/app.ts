@@ -9,9 +9,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+app.get("/", (_, res) => {
+  res.send("Welcome to Oporajeo.....");
+});
+app.use("/api/v1", v1router);
 
-app.use("/api/v1",v1router);
-
-// app.use("/api/v1/user",userrouter);
-// connectDB();
 export default app;
