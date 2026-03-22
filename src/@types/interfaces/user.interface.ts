@@ -1,10 +1,10 @@
-import {Types} from "mongoose"
+import { Role, Permission } from "../../constants/model/model.constant";
 
 export interface IUser {
-    _id: Types.ObjectId
-    name: string
-    email: string
-    password: string
-   isEmailVerified: boolean | false
-   
+  name: string;
+  email: string;
+  password?: string;
+  role?: Role;
+  permissions?: Permission[];
+  isEmailVerified?: boolean;
 }

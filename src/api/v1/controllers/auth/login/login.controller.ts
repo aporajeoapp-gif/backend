@@ -8,7 +8,7 @@ export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   const user = await UserModel.findOne({ email });
-  if (!user) {
+  if (!user || !user.password) {
     return res.status(401).json({ message: "Invalid credentials" });
   }
 
@@ -19,5 +19,14 @@ export const login = async (req: Request, res: Response) => {
 
   const token = generateToken({ userId: user._id.toString() });
 
-  res.json({ token });
+  res.json({ 
+    token,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      permissions: user.permissions
+    }
+  });
 };
