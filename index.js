@@ -1,0 +1,1 @@
+require('./dist/local.js');
