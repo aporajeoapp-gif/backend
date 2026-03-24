@@ -14,9 +14,7 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: "User ID not found in token" });
     }
 
-    const user = await UserModel.findById(userId).select(
-      "-password", // 🔥 never send password
-    );
+    const user = await UserModel.findById(userId).select("-password");
 
     if (!user) {
       return res.status(404).json({ message: "User not found in database" });
