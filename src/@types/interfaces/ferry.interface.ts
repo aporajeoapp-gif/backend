@@ -1,11 +1,15 @@
 export interface IFerryRoute {
-    ferryName: string;
-    route: string;
-    startPoint: string;
-    endPoint: string;
-    timings: string[];
-    fare: number;
-    createdBy: string;
-    createdAt?: Date;
-    updatedAt?: Date;
+  ferryName?: string | null;
+  ferryNumber: string;
+  // route: string;
+  // startPoint: string;
+  // endPoint: string;
+  routeName: string[];
+  stops: string[];
+  timings: { departure: string; arrival: string }[];
+  fare: number;
+  createdBy: string;
+  creatorName: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import { Permission, Role } from "../../../constants/model/model.constant";
 import UserModel from "../../../models/user.model";
 
-
 export interface AuthenticatedRequest extends Request {
   user?: {
     userId: string;
@@ -56,13 +55,11 @@ export const authorize = (
           user.permissions?.includes(requiredPermission) ||
           user.permissions?.includes("*") ||
           false;
-          
+
         if (!hasPermission) {
-          return res
-            .status(403)
-            .json({
-              message: `Forbidden: Required permission ${requiredPermission}`,
-            });
+          return res.status(403).json({
+            message: `Forbidden: Required permission ${requiredPermission}`,
+          });
         }
       }
 

@@ -1,12 +1,14 @@
 export interface IBusRoute {
-    busName: string;
+    busName?: string | null;
     routeNumber: string;
-    startPoint: string;
-    endPoint: string;
+    // startPoint: string;
+    // endPoint: string;
+    routeName: string[];
     stops: string[];
-    timings: string[];
+    timings: { departure: string; arrival: string }[];
     fare: number;
     createdBy: string;
+    creatorName: string;
     createdAt?: Date;
     updatedAt?: Date;
 }

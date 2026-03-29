@@ -8,6 +8,7 @@ export interface IEmergencyService {
         lng: number;
     };
     createdBy: string;
+    creatorName: string;
     createdAt?: Date;
     updatedAt?: Date;
 }

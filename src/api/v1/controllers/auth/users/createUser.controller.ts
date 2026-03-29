@@ -1,16 +1,15 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import UserModel from "../../../../../models/user.model";
+import { decryptPassword, encryptPassword } from "../../../../../utils/passencryption.utils";
 
 export const createUser = async (req: Request, res: Response) => {
   const { name, email, password, role, permissions } = req.body;
 
   if (!name || !email || !password || !role) {
-    return res
-      .status(400)
-      .json({
-        message: "Missing required fields: name, email, password, role",
-      });
+    return res.status(400).json({
+      message: "Missing required fields: name, email, password, role",
+    });
   }
 
   const validRoles = ["admin", "coordinator", "member"];
@@ -25,7 +24,7 @@ export const createUser = async (req: Request, res: Response) => {
       .json({ message: "User with this email already exists" });
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = encryptPassword(password);
 
   const newUser = await UserModel.create({
     name,
@@ -38,15 +37,25 @@ export const createUser = async (req: Request, res: Response) => {
 
   res.status(201).json({
     message: "User created successfully",
-    userId: newUser._id,
-    role: newUser.role,
+    user: {
+      ...newUser.toObject(),
+      password: decryptPassword(newUser.password || ""), // Return as plain text for frontend consistency
+    },
   });
 };
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const users = await UserModel.find().sort({ createdAt: -1 });
-    res.status(200).json(users);
+    const result = users.map((user) => {
+      const decrypted = decryptPassword(user.password || "");
+      return {
+        ...user.toObject(),
+        password: decrypted || user.password, // Fallback to raw string if decryption fails
+      };
+    });
+
+    res.status(200).json(result);
   } catch (error: any) {
     console.error("Get Users Error:", error);
     res

@@ -5,22 +5,33 @@ import { GENERAL_SCHEMA_OPTIONS } from "../../constants/model/schemaOption";
 
 const busSchema = new Schema<IBusRoute>(
     {
-        busName: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+        busName: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
         routeNumber: SCHEMA_DEFINATION_PROPERTIES.requiredString,
-        startPoint: SCHEMA_DEFINATION_PROPERTIES.requiredString,
-        endPoint: SCHEMA_DEFINATION_PROPERTIES.requiredString,
-        stops: {
+        // startPoint: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+        // endPoint: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+        routeName: {
             type: [String],
             required: true,
             default: []
         },
-        timings: {
+        stops: {
             type: [String],
+            required: true,
+            default: []
+        },  
+        timings: {
+            type: [
+                {
+                    departure: { type: String, required: true },
+                    arrival: { type: String, required: true }
+                }
+            ],
             required: true,
             default: []
         },
         fare: SCHEMA_DEFINATION_PROPERTIES.requiredNumber,
         createdBy: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+        creatorName: SCHEMA_DEFINATION_PROPERTIES.requiredString,
     },
     GENERAL_SCHEMA_OPTIONS
 );

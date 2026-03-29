@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import bcrypt from "bcrypt";
 import UserModel from "../../../../../models/user.model";
+import { encryptPassword } from "../../../../../utils/passencryption.utils";
 
 export const adminSignup = async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
@@ -13,7 +13,7 @@ export const adminSignup = async (req: Request, res: Response) => {
     return res.status(409).json({ message: "User already exists" });
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = encryptPassword(password);
 
   const admin = await UserModel.create({
     name,

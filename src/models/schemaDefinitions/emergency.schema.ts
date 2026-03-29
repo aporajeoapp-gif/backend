@@ -23,6 +23,7 @@ const emergencySchema = new Schema<IEmergencyService>(
             lng: { type: Number, required: false }
         },
         createdBy: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+        creatorName: SCHEMA_DEFINATION_PROPERTIES.requiredString,
     },
     GENERAL_SCHEMA_OPTIONS
 );
