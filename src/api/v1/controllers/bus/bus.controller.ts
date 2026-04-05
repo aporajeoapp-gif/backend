@@ -2,6 +2,9 @@ import { Request, Response } from "express";
 import BusModel from "../../../../models/bus.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import UserModel from "../../../../models/user.model";
+import { createAuditLog } from "../../../../services/auditLog.service";
+
+
 
 export const createBus = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -31,6 +34,29 @@ export const createBus = async (req: AuthenticatedRequest, res: Response) => {
       creatorName,
     });
     res.status(201).json({ message: "Bus created successfully", bus: newBus });
+
+    // Audit Log
+    if (req.user) {
+      await createAuditLog({
+        user: {
+          id: req.user.userId,
+          name: req.user.name,
+          role: req.user.role,
+          email: req.user.email,
+        },
+        action: "BUS_CREATE",
+        task: `Created bus: ${newBus.busName}`,
+        details: `Created bus on route ${newBus.routeName} (${newBus.routeNumber})`,
+        severity: "medium",
+        payload: {
+          newData: newBus.toObject(),
+        },
+        entityId: newBus._id.toString(),
+        entityModel: "BusRoutes",
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+      });
+    }
   } catch (error: any) {
     console.error("Create Bus Error:", error);
     res
@@ -51,7 +77,7 @@ export const getBuses = async (req: Request, res: Response) => {
   }
 };
 
-export const updateBus = async (req: Request, res: Response) => {
+export const updateBus = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -73,6 +99,8 @@ export const updateBus = async (req: Request, res: Response) => {
       "timings",
       "fare",
     ];
+    const oldData = bus.toObject();
+
     fieldsToUpdate.forEach((field) => {
       if (updateData[field] !== undefined) {
         (bus as any)[field] = updateData[field];
@@ -85,6 +113,35 @@ export const updateBus = async (req: Request, res: Response) => {
       message: "Bus updated successfully",
       bus,
     });
+
+    const modifiedFields = Object.keys(updateData).filter(key => fieldsToUpdate.includes(key));
+    const changeDetails = modifiedFields.length > 0 
+      ? `Modified fields: ${modifiedFields.join(", ")}` 
+      : `Updated bus details for ${bus.busName}`;
+
+    // Audit Log
+    if (req.user) {
+      await createAuditLog({
+        user: {
+          id: req.user.userId,
+          name: req.user.name,
+          role: req.user.role,
+          email: req.user.email,
+        },
+        action: "BUS_UPDATE",
+        task: `Updated bus: ${bus.busName}`,
+        details: changeDetails,
+        severity: "medium",
+        payload: {
+          oldData,
+          newData: bus.toObject(),
+        },
+        entityId: bus._id.toString(),
+        entityModel: "BusRoutes",
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+      });
+    }
   } catch (error: any) {
     console.error("Update Bus Error:", error);
     res
@@ -93,7 +150,7 @@ export const updateBus = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteBus = async (req: Request, res: Response) => {
+export const deleteBus = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -110,6 +167,29 @@ export const deleteBus = async (req: Request, res: Response) => {
       message: "Bus deleted successfully",
       bus,
     });
+
+    // Audit Log
+    if (req.user) {
+      await createAuditLog({
+        user: {
+          id: req.user.userId,
+          name: req.user.name,
+          role: req.user.role,
+          email: req.user.email,
+        },
+        action: "BUS_DELETE",
+        task: `Deleted bus: ${bus.busName}`,
+        details: `Permanently removed bus ${bus.busName} from route ${bus.routeName}`,
+        severity: "high",
+        payload: {
+          oldData: bus.toObject(),
+        },
+        entityId: bus._id.toString(),
+        entityModel: "BusRoutes",
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+      });
+    }
   } catch (error: any) {
     console.error("Delete Bus Error:", error);
     res

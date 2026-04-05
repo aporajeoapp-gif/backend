@@ -8,6 +8,8 @@ import emergencyRouter from "./routes/emergency.route";
 import bulkrouter from "./routes/bulk.route";
 import analyticsRouter from "./routes/analytics.route";
 
+import auditLogRouter from "./routes/auditLog.route";
+
 const v1router = Router();
 
 v1router.use("/auth", authrouter);
@@ -18,4 +20,5 @@ v1router.use("/ferry", ferryRouter);
 v1router.use("/emergency", emergencyRouter);
 v1router.use("/bulk",bulkrouter)
 v1router.use("/analytics", analyticsRouter);
+v1router.use("/audit-logs", auditLogRouter);
 export default v1router;

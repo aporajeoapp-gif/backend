@@ -73,30 +73,30 @@ const optionalArrayObjectId: SchemaDefinitionProperty<Types.ObjectId[] | null> =
     default: null,
 };
 
-const ROLES = ["admin", "coordinator", "member"] as const;
-type Role = (typeof ROLES)[number];
+// const ROLES = ["admin", "coordinator", "member"] as const;
+// type Role = (typeof ROLES)[number];
 
-const PERMISSIONS = [
-  "bus.create", "bus.read", "bus.update", "bus.delete",
-  "ferry.create", "ferry.read", "ferry.update", "ferry.delete",
-  "doctor.create", "doctor.read", "doctor.update", "doctor.delete",
-  "emergency.create", "emergency.read", "emergency.update", "emergency.delete",
-  "event.create", "event.read", "event.update", "event.delete",
-  "ads.create", "ads.read", "ads.update", "ads.delete",
-  "users.create", "users.read", "users.update", "users.delete",
-  "blood.create", "blood.read", "blood.update", "blood.delete",
-  "*"
-] as const;
-type Permission = (typeof PERMISSIONS)[number];
+// const PERMISSIONS = [
+//   "bus.create", "bus.read", "bus.update", "bus.delete",
+//   "ferry.create", "ferry.read", "ferry.update", "ferry.delete",
+//   "doctor.create", "doctor.read", "doctor.update", "doctor.delete",
+//   "emergency.create", "emergency.read", "emergency.update", "emergency.delete",
+//   "event.create", "event.read", "event.update", "event.delete",
+//   "ads.create", "ads.read", "ads.update", "ads.delete",
+//   "users.create", "users.read", "users.update", "users.delete",
+//   "blood.create", "blood.read", "blood.update", "blood.delete",
+//   "*"
+// ] as const;
+// type Permission = (typeof PERMISSIONS)[number];
 
-const CAMP_STATUS = ["upcoming", "ongoing", "completed"] as const;
-type CampStatus = (typeof CAMP_STATUS)[number];
+// const CAMP_STATUS = ["upcoming", "ongoing", "completed"] as const;
+// type CampStatus = (typeof CAMP_STATUS)[number];
 
-const EVENT_STATUS = ["upcoming", "ongoing", "completed"] as const;
-type EventStatus = (typeof EVENT_STATUS)[number];
+// const EVENT_STATUS = ["upcoming", "ongoing", "completed"] as const;
+// type EventStatus = (typeof EVENT_STATUS)[number];
 
-const ADS_STATUS = ["active", "expired", "pending"] as const;
-type AdsStatus = (typeof ADS_STATUS)[number];
+// const ADS_STATUS = ["active", "expired", "pending"] as const;
+// type AdsStatus = (typeof ADS_STATUS)[number];
 
 const SchemaDefinitionProperty = {
     requiredString,
@@ -113,7 +113,7 @@ const SchemaDefinitionProperty = {
     optionalArrayObjectId,
 };
 
-export { ROLES, Role, PERMISSIONS, Permission, CAMP_STATUS, CampStatus, EVENT_STATUS, EventStatus, ADS_STATUS, AdsStatus };
+// export { ROLES, Role, PERMISSIONS, Permission, CAMP_STATUS, CampStatus, EVENT_STATUS, EventStatus, ADS_STATUS, AdsStatus };
 const SCHEMA_DEFINATION_PROPERTIES=SchemaDefinitionProperty ;
 
 export default SCHEMA_DEFINATION_PROPERTIES;

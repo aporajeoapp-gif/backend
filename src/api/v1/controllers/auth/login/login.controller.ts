@@ -37,6 +37,8 @@ export const login = async (req: Request, res: Response) => {
   const token = generateToken({
     userId: user._id.toString(),
     name: user.name,
+    email: user.email,
+    role: user.role || "member",
   });
 
   res.json({

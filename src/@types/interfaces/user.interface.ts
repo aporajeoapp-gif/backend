@@ -1,4 +1,7 @@
-import { Role, Permission } from "../../constants/model/model.constant";
+
+
+import { Permission } from "../constant/permissions.contant";
+import { Role } from "../constant/userRole.constant";
 
 export interface IUser {
   name: string;

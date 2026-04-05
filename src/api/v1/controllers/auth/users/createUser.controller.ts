@@ -2,8 +2,10 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import UserModel from "../../../../../models/user.model";
 import { decryptPassword, encryptPassword } from "../../../../../utils/passencryption.utils";
+import { createAuditLog } from "../../../../../services/auditLog.service";
+import { AuthenticatedRequest } from "../../../middleware/rbac.middleware";
 
-export const createUser = async (req: Request, res: Response) => {
+export const createUser = async (req: AuthenticatedRequest, res: Response) => {
   const { name, email, password, role, permissions } = req.body;
 
   if (!name || !email || !password || !role) {
@@ -42,9 +44,37 @@ export const createUser = async (req: Request, res: Response) => {
       password: decryptPassword(newUser.password || ""), // Return as plain text for frontend consistency
     },
   });
+
+  // Audit Log
+  if (req.user) {
+    await createAuditLog({
+      user: {
+        id: req.user.userId,
+        name: req.user.name,
+        role: req.user.role,
+        email: req.user.email,
+      },
+      action: "USER_CREATE",
+      task: `Created user: ${newUser.name}`,
+      details: `Admin created a new user with role: ${newUser.role}`,
+      severity: "medium",
+      payload: {
+        newData: {
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+          permissions: newUser.permissions,
+        },
+      },
+      entityId: newUser._id.toString(),
+      entityModel: "Users",
+      ipAddress: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
+  }
 };
 
-export const getAllUsers = async (req: Request, res: Response) => {
+export const getAllUsers = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const users = await UserModel.find().sort({ createdAt: -1 });
     const result = users.map((user) => {
@@ -64,7 +94,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
   }
 };
 
-export const updateUser = async (req: Request, res: Response) => {
+export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -93,6 +123,8 @@ export const updateUser = async (req: Request, res: Response) => {
       "isEmailVerified",
       "status",
     ];
+    const oldData = user.toObject();
+
     fieldsToUpdate.forEach((field) => {
       if (updateData[field] !== undefined) {
         (user as any)[field] = updateData[field];
@@ -105,6 +137,39 @@ export const updateUser = async (req: Request, res: Response) => {
       message: "User updated successfully",
       user,
     });
+
+    const modifiedFields = Object.keys(updateData).filter(key => fieldsToUpdate.includes(key));
+    let changeDetails = `Modified fields: ${modifiedFields.join(", ")}`;
+    
+    if (updateData.role && updateData.role !== oldData.role) {
+      changeDetails = `Role changed from ${oldData.role} to ${updateData.role}`;
+    } else if (updateData.status && updateData.status !== oldData.status) {
+      changeDetails = `Status changed from ${oldData.status} to ${updateData.status}`;
+    }
+
+    // Audit Log
+    if (req.user) {
+      await createAuditLog({
+        user: {
+          id: req.user.userId,
+          name: req.user.name,
+          role: req.user.role,
+          email: req.user.email,
+        },
+        action: "USER_UPDATE",
+        task: `Updated user: ${user.name}`,
+        details: changeDetails,
+        severity: "medium",
+        payload: {
+          oldData,
+          newData: user.toObject(),
+        },
+        entityId: user._id.toString(),
+        entityModel: "Users",
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+      });
+    }
   } catch (error: any) {
     console.error("Update User Error:", error);
     res
@@ -113,7 +178,7 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteUser = async (req: Request, res: Response) => {
+export const deleteUser = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -130,6 +195,29 @@ export const deleteUser = async (req: Request, res: Response) => {
       message: "User deleted successfully",
       user,
     });
+
+    // Audit Log
+    if (req.user) {
+      await createAuditLog({
+        user: {
+          id: req.user.userId,
+          name: req.user.name,
+          role: req.user.role,
+          email: req.user.email,
+        },
+        action: "USER_DELETE",
+        task: `Deleted user: ${user.name}`,
+        details: `User ${user.email} was permanently deleted.`,
+        severity: "high",
+        payload: {
+          oldData: user.toObject(),
+        },
+        entityId: user._id.toString(),
+        entityModel: "Users",
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+      });
+    }
   } catch (error: any) {
     console.error("Delete User Error:", error);
     res

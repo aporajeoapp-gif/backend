@@ -1,12 +1,14 @@
 import { Request, Response, NextFunction } from "express";
-import { Permission, Role } from "../../../constants/model/model.constant";
 import UserModel from "../../../models/user.model";
+import { Role } from "../../../@types/constant/userRole.constant";
+import { Permission } from "../../../@types/constant/permissions.contant";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
     userId: string;
     name: string;
-    role?: Role;
+    email: string;
+    role: Role;
     permissions?: Permission[];
   };
 }
@@ -32,9 +34,11 @@ export const authorize = (
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Attach name to req.user if not already present
-      if (req.user && !req.user.name) {
+      // Ensure req.user has full details from the database (fixes old tokens)
+      if (req.user) {
         req.user.name = user.name;
+        req.user.email = user.email;
+        req.user.role = user.role as Role;
       }
 
       // Admin bypass

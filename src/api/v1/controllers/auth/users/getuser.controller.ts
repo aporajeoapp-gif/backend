@@ -31,3 +31,13 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
       .json({ message: "Failed to fetch user", error: String(error) });
   }
 };
+
+export const updateUser = async (req: AuthRequest, res: Response) => {
+  try {
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to update user", error: String(error) });
+  }
+};
