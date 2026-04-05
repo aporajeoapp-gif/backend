@@ -1,4 +1,5 @@
-import { EventStatus } from "../../constants/model/model.constant";
+import { EventStatus } from "../constant/eventstatus.constant";
+
 
 export interface IEvent {
     title: string;

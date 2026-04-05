@@ -1,5 +1,6 @@
-import { CampStatus } from "../../constants/model/model.constant";
+
 import { Types } from "mongoose";
+import { CampStatus } from "../constant/bloodDonationCampStatus.constant";
 
 export interface IBloodCamp {
     campName: string;

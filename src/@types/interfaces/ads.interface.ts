@@ -1,4 +1,5 @@
-import { AdsStatus } from "../../constants/model/model.constant";
+import { AdsStatus } from "../constant/adsStatus.constant";
+
 
 export interface IAdvertisement {
     title: string;
