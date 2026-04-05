@@ -20,3 +20,24 @@ export interface IAuditLog {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+export interface CreateAuditLogParams {
+  user: {
+    id: string;
+    name?: string;
+    role?: string;
+    email?: string;
+  };
+  action: string;
+  task: string;
+  details: string;
+  severity?: "low" | "medium" | "high";
+  payload?: {
+    oldData?: any;
+    newData?: any;
+  };
+  entityId?: string;
+  entityModel?: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
