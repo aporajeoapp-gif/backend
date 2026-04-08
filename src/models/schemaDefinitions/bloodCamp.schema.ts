@@ -17,6 +17,7 @@ const bloodCampSchema = new Schema<IBloodCamp>(
             required: true,
             default: []
         },
+        banner_image: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
         contactPhone: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         contactEmail: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         description: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,

@@ -18,8 +18,6 @@ busRouter.post(
 );
 busRouter.get(
   "/get-all-buses",
-  authMiddleware,
-  authorize(undefined, "bus.read"),
   getBuses,
 );
 

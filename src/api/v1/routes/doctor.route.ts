@@ -6,7 +6,7 @@ import { authorize } from "../middleware/rbac.middleware";
 const doctorRouter = Router();
 
 
-doctorRouter.get("/get-all-doctors",authMiddleware, getDoctors);
+doctorRouter.get("/get-all-doctors", getDoctors);
 
 
 doctorRouter.post(

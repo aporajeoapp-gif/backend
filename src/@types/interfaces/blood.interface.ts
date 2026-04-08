@@ -11,6 +11,7 @@ export interface IBloodCamp {
     address: string;
     city: string;
     bloodGroupsNeeded: string[];
+    banner_image?: string | null;
     contactPhone: string;
     contactEmail: string;
     description?: string;

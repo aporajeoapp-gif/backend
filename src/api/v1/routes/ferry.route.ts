@@ -19,8 +19,6 @@ ferryRouter.post(
 
 ferryRouter.get(
   "/get-all-ferries",
-  authMiddleware,
-  authorize(undefined, "ferry.read"),
   getFerries,
 );
 

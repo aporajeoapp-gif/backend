@@ -14,8 +14,6 @@ emergencyRouter.post(
 
 emergencyRouter.get(
     "/get-all-emergency-services",
-    authMiddleware,
-    authorize(undefined, "emergency.read"),
     getEmergencyServices
 );
 
