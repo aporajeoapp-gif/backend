@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import BloodCampModel from "../../../../models/bloodCamp.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
-import { uploadToCloudinary, deleteFromCloudinary } from "../../../../utils/cloudinary.utils";
+import { uploadToS3, deleteFromS3 } from "../../../../utils/s3.utils";
 
 export const createBloodCamp = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -9,7 +9,12 @@ export const createBloodCamp = async (req: AuthenticatedRequest, res: Response) 
 
     let banner_image = null;
     if (req.file) {
-      const uploadResult = await uploadToCloudinary(req.file.buffer, "blood_camps");
+      const uploadResult = await uploadToS3(
+        req.file.buffer,
+        "blood_camps",
+        req.file.originalname,
+        req.file.mimetype
+      );
       banner_image = uploadResult.secure_url;
     }
 
@@ -63,9 +68,17 @@ export const updateBloodCamp = async (req: AuthenticatedRequest, res: Response) 
     }
 
     if (req.file) {
-      // If there's an old image, we might want to delete it, but Cloudinary deletion needs the public_id
-      // For now, let's just upload the new one
-      const uploadResult = await uploadToCloudinary(req.file.buffer, "blood_camps");
+      // If there's an old image, delete it from S3
+      if (camp.banner_image) {
+        await deleteFromS3(camp.banner_image);
+      }
+      
+      const uploadResult = await uploadToS3(
+        req.file.buffer,
+        "blood_camps",
+        req.file.originalname,
+        req.file.mimetype
+      );
       updateData.banner_image = uploadResult.secure_url;
     }
 
@@ -94,8 +107,10 @@ export const deleteBloodCamp = async (req: AuthenticatedRequest, res: Response) 
       return res.status(404).json({ message: "Blood Donation Camp not found" });
     }
 
-    // Ideally, delete the image from Cloudinary here if it exists.
-    // Needs public_id extraction from URL.
+    // Delete the image from S3 if it exists
+    if (camp.banner_image) {
+      await deleteFromS3(camp.banner_image);
+    }
 
     res.status(200).json({
       message: "Blood Donation Camp deleted successfully",
