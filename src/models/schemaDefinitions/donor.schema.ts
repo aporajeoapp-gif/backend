@@ -11,6 +11,21 @@ const donorSchema = new Schema<IDonor>(
         age: SCHEMA_DEFINATION_PROPERTIES.requiredNumber,
         phone: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         donatedAt: SCHEMA_DEFINATION_PROPERTIES.optionalDate,
+        status: {
+            type: String,
+            enum: ['pending', 'approved'],
+            default: 'pending'
+        },
+        approvedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'Users',
+            default: null
+        },
+        expiresAt: {
+            type: Date,
+            default: null,
+            index: { expires: 0 } // TTL index
+        }
     },
     GENERAL_SCHEMA_OPTIONS
 );

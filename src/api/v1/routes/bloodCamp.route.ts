@@ -1,5 +1,5 @@
 import { createBloodCamp, deleteBloodCamp, getBloodCampById, getBloodCamps, updateBloodCamp } from "../controllers/bloodCamp/bloodCamp.controller";
-import { addDonorToCamp, deleteDonor, getCampDonors } from "../controllers/bloodCamp/donor.controller";
+import { addDonorToCamp, approveDonor, deleteDonor, getCampDonors, publicDonorRegistration } from "../controllers/bloodCamp/donor.controller";
 import authMiddleware from "../middleware/auth.middleware";
 import { authorize } from "../middleware/rbac.middleware";
 import upload from "../middleware/multer.middleware";
@@ -10,6 +10,7 @@ const bloodCampRouter = Router();
 // Public route
 bloodCampRouter.get("/get-all-camps", getBloodCamps);
 bloodCampRouter.get("/get-camp/:id", getBloodCampById);
+bloodCampRouter.post("/public-add-donor", publicDonorRegistration);
 
 // Protected routes
 bloodCampRouter.post(
@@ -41,6 +42,13 @@ bloodCampRouter.post(
   authMiddleware,
   authorize(undefined, "blood.update"),
   addDonorToCamp
+);
+
+bloodCampRouter.patch(
+  "/approve-donor/:id",
+  authMiddleware,
+  authorize(undefined, "blood.update"),
+  approveDonor
 );
 
 bloodCampRouter.get(

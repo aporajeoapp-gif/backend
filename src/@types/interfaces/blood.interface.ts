@@ -30,5 +30,8 @@ export interface IDonor {
     age: number;
     phone: string;
     donatedAt?: Date | null;
+    status: 'pending' | 'approved';
+    approvedBy?: Types.ObjectId | null;
+    expiresAt?: Date | null;
     createdAt?: Date;
 }

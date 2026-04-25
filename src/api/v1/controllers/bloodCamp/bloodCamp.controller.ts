@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import BloodCampModel from "../../../../models/bloodCamp.model";
+import DonorModel from "../../../../models/donor.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import { uploadToS3, deleteFromS3 } from "../../../../utils/s3.utils";
 import { createAuditLogFromRequest } from "../../../../services/auditLog.service";
@@ -76,7 +77,14 @@ export const getBloodCampById = async (req: Request, res: Response) => {
     if (!camp) {
       return res.status(404).json({ message: "Blood Donation Camp not found" });
     }
-    res.status(200).json(camp);
+
+    // Fetch approved donors for this camp to show in public preview
+    const approvedDonors = await DonorModel.find({ campId: id, status: 'approved' }).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      ...camp.toObject(),
+      donors: approvedDonors
+    });
   } catch (error: any) {
     console.error("Get Blood Camp By Id Error:", error);
     res.status(500).json({ message: "Failed to fetch blood camp", error: error.message });
