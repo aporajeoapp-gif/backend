@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
+import { createAuditLogFromRequest } from "../../../../services/auditLog.service";
+import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 
 export const bulkInsert = (Model: any) => {
-  return async (req: Request & { user?: any }, res: Response) => {
+  return async (req: AuthenticatedRequest, res: Response) => {
     try {
       const data = req.body;
 
@@ -21,9 +23,19 @@ export const bulkInsert = (Model: any) => {
         message: "Bulk insert success",
         count: result.length,
       });
+
+      // Audit Log
+      await createAuditLogFromRequest(req, {
+        action: "BULK_INSERT",
+        task: `Bulk inserted data into ${Model.modelName}`,
+        details: `Inserted ${result.length} records into ${Model.modelName}`,
+        severity: "medium",
+        payload: { newData: { count: result.length, model: Model.modelName } },
+        entityModel: Model.modelName,
+      });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Bulk insert failed" });
     }
   };
-};
+};

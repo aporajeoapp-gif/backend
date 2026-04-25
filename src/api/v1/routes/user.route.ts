@@ -2,7 +2,8 @@ import { Router } from "express";
 
 import authMiddleware from "../middleware/auth.middleware";
 import { authorize } from "../middleware/rbac.middleware";
-import { getCurrentUser } from "../controllers/auth/users/getuser.controller";
+import upload from "../middleware/multer.middleware";
+import { getCurrentUser, updateProfile } from "../controllers/auth/users/getuser.controller";
 import {
   createUser,
   getAllUsers,
@@ -13,12 +14,20 @@ import {
 const userrouter = Router();
 
 userrouter.get("/me", authMiddleware, getCurrentUser);
-userrouter.post("/createuser", authMiddleware, authorize("admin"), createUser);
+userrouter.put("/update-profile", authMiddleware, upload.single("avatar"), updateProfile);
+userrouter.post(
+  "/createuser",
+  authMiddleware,
+  authorize("admin"),
+  upload.single("avatar"),
+  createUser,
+);
 userrouter.get("/get-all-users", authMiddleware, getAllUsers);
 userrouter.put(
   "/update-user/:id",
   authMiddleware,
   authorize("admin"),
+  upload.single("avatar"),
   updateUser,
 );
 userrouter.delete(

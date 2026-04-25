@@ -8,6 +8,7 @@ export interface IEvent {
     time: string;
     location: string;
     organizer: string;
+    category: string;
     image?: string | null;
     status: EventStatus;
     createdBy: string;

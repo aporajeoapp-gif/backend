@@ -2,6 +2,7 @@ import { Response,Request } from "express";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import UserModel from "../../../../models/user.model";
 import EmergencyModel from "../../../../models/emergency.model";
+import { createAuditLogFromRequest } from "../../../../services/auditLog.service";
 
 export const createEmergencyService = async (
   req: AuthenticatedRequest,
@@ -35,6 +36,17 @@ export const createEmergencyService = async (
     res.status(201).json({
       message: "Emergency service created successfully",
       emergencyService: newEmergencyService,
+    });
+
+    // Audit Log
+    await createAuditLogFromRequest(req, {
+      action: "EMERGENCY_CREATE",
+      task: `Created emergency service: ${newEmergencyService.serviceName}`,
+      details: `Created emergency service in category ${newEmergencyService.category}`,
+      severity: "medium",
+      payload: { newData: newEmergencyService.toObject() },
+      entityId: newEmergencyService._id.toString(),
+      entityModel: "EmergencyServices",
     });
   } catch (error: any) {
     console.error("Create Emergency Service Error:", error);
@@ -81,6 +93,8 @@ export const updateEmergencyService = async (
       return res.status(404).json({ message: "Emergency service not found" });
     }
 
+    const oldData = emergencyService.toObject();
+
     const fieldsToUpdate = [
       "serviceName",
       "category",
@@ -99,6 +113,17 @@ export const updateEmergencyService = async (
     res.status(200).json({
       message: "Emergency service updated successfully",
       emergencyService,
+    });
+
+    // Audit Log
+    await createAuditLogFromRequest(req, {
+      action: "EMERGENCY_UPDATE",
+      task: `Updated emergency service: ${emergencyService.serviceName}`,
+      details: `Updated details for emergency service ${emergencyService.serviceName}`,
+      severity: "medium",
+      payload: { oldData, newData: emergencyService.toObject() },
+      entityId: emergencyService._id.toString(),
+      entityModel: "EmergencyServices",
     });
   } catch (error: any) {
     console.error("Update Emergency Service Error:", error);
@@ -131,6 +156,17 @@ export const deleteEmergencyService = async (
       message: "Emergency service deleted successfully",
       emergencyService,
     });
+
+    // Audit Log
+    await createAuditLogFromRequest(req, {
+      action: "EMERGENCY_DELETE",
+      task: `Deleted emergency service: ${emergencyService.serviceName}`,
+      details: `Permanently removed emergency service ${emergencyService.serviceName}`,
+      severity: "high",
+      payload: { oldData: emergencyService.toObject() },
+      entityId: emergencyService._id.toString(),
+      entityModel: "EmergencyServices",
+    });
   } catch (error: any) {
     console.error("Delete Emergency Service Error:", error);
     res
@@ -141,3 +177,4 @@ export const deleteEmergencyService = async (
       });
   }
 };
+

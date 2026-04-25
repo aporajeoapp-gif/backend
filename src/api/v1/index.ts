@@ -10,6 +10,8 @@ import analyticsRouter from "./routes/analytics.route";
 
 import auditLogRouter from "./routes/auditLog.route";
 import bloodCampRouter from "./routes/bloodCamp.route";
+import adsRouter from "./routes/ads.route";
+import eventRouter from "./routes/event.route";
 
 
 const v1router = Router();
@@ -24,5 +26,7 @@ v1router.use("/bulk",bulkrouter)
 v1router.use("/analytics", analyticsRouter);
 v1router.use("/audit-logs", auditLogRouter);
 v1router.use("/blood-camp", bloodCampRouter);
+v1router.use("/ads", adsRouter);
+v1router.use("/events", eventRouter);
 
 export default v1router;

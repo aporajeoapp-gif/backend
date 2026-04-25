@@ -9,6 +9,8 @@ const adsSchema = new Schema<IAdvertisement>(
         description: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         image: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         link: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
+        tag: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+        cta: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         startDate: SCHEMA_DEFINATION_PROPERTIES.requiredDate,
         endDate: SCHEMA_DEFINATION_PROPERTIES.requiredDate,
         status: {

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import DoctorModel from "../../../../models/doctor.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import UserModel from "../../../../models/user.model";
+import { createAuditLogFromRequest } from "../../../../services/auditLog.service";
 
 export const createDoctor = async (
   req: AuthenticatedRequest,
@@ -41,6 +42,17 @@ export const createDoctor = async (
       message: "Doctor created successfully",
       doctor: newDoctor,
     });
+
+    // Audit Log
+    await createAuditLogFromRequest(req, {
+      action: "DOCTOR_CREATE",
+      task: `Created doctor: ${newDoctor.name}`,
+      details: `Created doctor entry for ${newDoctor.specialty} at ${newDoctor.location}`,
+      severity: "medium",
+      payload: { newData: newDoctor.toObject() },
+      entityId: newDoctor._id.toString(),
+      entityModel: "Doctors",
+    });
   } catch (error: any) {
     console.error("Create Doctor Error:", error);
     res
@@ -61,7 +73,7 @@ export const getDoctors = async (req: Request, res: Response) => {
   }
 };
 
-export const updateDoctor = async (req: Request, res: Response) => {
+export const updateDoctor = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -74,6 +86,8 @@ export const updateDoctor = async (req: Request, res: Response) => {
     if (!doctor) {
       return res.status(404).json({ message: "Doctor not found" });
     }
+
+    const oldData = doctor.toObject();
 
     const fieldsToUpdate = [
       "name",
@@ -97,6 +111,17 @@ export const updateDoctor = async (req: Request, res: Response) => {
       message: "Doctor updated successfully",
       doctor,
     });
+
+    // Audit Log
+    await createAuditLogFromRequest(req, {
+      action: "DOCTOR_UPDATE",
+      task: `Updated doctor: ${doctor.name}`,
+      details: `Updated details for doctor ${doctor.name}`,
+      severity: "medium",
+      payload: { oldData, newData: doctor.toObject() },
+      entityId: doctor._id.toString(),
+      entityModel: "Doctors",
+    });
   } catch (error: any) {
     console.error("Update Doctor Error:", error);
     res
@@ -105,7 +130,7 @@ export const updateDoctor = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteDoctor = async (req: Request, res: Response) => {
+export const deleteDoctor = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -122,6 +147,17 @@ export const deleteDoctor = async (req: Request, res: Response) => {
       message: "Doctor deleted successfully",
       doctor,
     });
+
+    // Audit Log
+    await createAuditLogFromRequest(req, {
+      action: "DOCTOR_DELETE",
+      task: `Deleted doctor: ${doctor.name}`,
+      details: `Permanently removed doctor entry for ${doctor.name}`,
+      severity: "high",
+      payload: { oldData: doctor.toObject() },
+      entityId: doctor._id.toString(),
+      entityModel: "Doctors",
+    });
   } catch (error: any) {
     console.error("Delete Doctor Error:", error);
     res
@@ -129,3 +165,4 @@ export const deleteDoctor = async (req: Request, res: Response) => {
       .json({ message: "Failed to delete doctor", error: error.message });
   }
 };
+

@@ -17,6 +17,11 @@ export interface IAuditLog {
   entityModel?: string;
   ipAddress?: string;
   userAgent?: string;
+  deviceName?: string;
+  location?: {
+    lat?: number;
+    lng?: number;
+  };
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -40,4 +45,10 @@ export interface CreateAuditLogParams {
   entityModel?: string;
   ipAddress?: string;
   userAgent?: string;
+  deviceName?: string;
+  location?: {
+    lat?: number;
+    lng?: number;
+  };
 }
+

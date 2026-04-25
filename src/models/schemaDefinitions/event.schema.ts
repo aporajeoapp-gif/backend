@@ -11,6 +11,7 @@ const eventSchema = new Schema<IEvent>(
         time: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         location: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         organizer: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+        category: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         image: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
         status: {
             type: String,

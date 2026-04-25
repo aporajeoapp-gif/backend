@@ -1,12 +1,10 @@
 import AuditLogModel from "../models/auditLog.model";
-import {
-  CreateAuditLogParams,
-  IAuditLog,
-} from "../@types/interfaces/auditLog.interface";
+import { CreateAuditLogParams, IAuditLog } from "../@types/interfaces/auditLog.interface";
 import { Types } from "mongoose";
+import { AuthenticatedRequest } from "../api/v1/middleware/rbac.middleware";
 
-const sanitizeData = (data: any): any => {
-  if (!data) return data;
+const sanitizeData = (data: any, depth = 0): any => {
+  if (!data || depth > 5) return data;
 
   // Handle Mongoose ObjectId
   if (data instanceof Types.ObjectId || data._bsontype === "ObjectId") {
@@ -26,10 +24,10 @@ const sanitizeData = (data: any): any => {
   if (typeof data !== "object") return data;
 
   if (Array.isArray(data)) {
-    return data.map(sanitizeData);
+    return data.map((item) => sanitizeData(item, depth + 1));
   }
 
-  const sanitized: any = { ...data };
+  const sanitized: any = {};
   const sensitiveFields = [
     "password",
     "token",
@@ -38,13 +36,10 @@ const sanitizeData = (data: any): any => {
     "__v",
   ];
 
-  for (const key in sanitized) {
-    const value = sanitized[key];
+  for (const key in data) {
+    const value = data[key];
 
-    if (sensitiveFields.includes(key)) {
-      delete sanitized[key];
-      continue;
-    }
+    if (sensitiveFields.includes(key)) continue;
 
     // Convert nested ObjectIds
     if (
@@ -69,19 +64,28 @@ const sanitizeData = (data: any): any => {
 
     // Remove other binary buffers that aren't IDs
     if (Buffer.isBuffer(value) || (value && value.type === "Buffer")) {
-      delete sanitized[key];
       continue;
     }
 
     if (value && typeof value === "object") {
-      sanitized[key] = sanitizeData(value);
+      sanitized[key] = sanitizeData(value, depth + 1);
+    } else {
+      sanitized[key] = value;
     }
   }
 
   return sanitized;
 };
 
+const getDeviceName = (userAgent: string): string => {
+  if (!userAgent) return "Unknown Device";
+  if (userAgent.includes("Mobi")) return "Mobile Device";
+  if (userAgent.includes("Tablet")) return "Tablet Device";
+  return "Desktop";
+};
+
 export const createAuditLog = async (params: CreateAuditLogParams) => {
+
   try {
     const auditLogData: Partial<IAuditLog> = {
       user: new Types.ObjectId(params.user.id),
@@ -106,7 +110,11 @@ export const createAuditLog = async (params: CreateAuditLogParams) => {
       entityModel: params.entityModel || undefined,
       ipAddress: params.ipAddress || "unknown",
       userAgent: params.userAgent || "unknown",
+      deviceName: params.deviceName || (params.userAgent ? getDeviceName(params.userAgent) : "Unknown Device"),
+      location: params.location || undefined,
     };
+
+
 
     const newLog = await AuditLogModel.create(auditLogData);
     return newLog;
@@ -115,3 +123,33 @@ export const createAuditLog = async (params: CreateAuditLogParams) => {
     return null;
   }
 };
+
+
+export const createAuditLogFromRequest = async (
+
+  req: AuthenticatedRequest,
+  params: Omit<CreateAuditLogParams, "user" | "ipAddress" | "userAgent">,
+) => {
+  if (!req.user) return null;
+
+  const userAgent = req.headers["user-agent"] || "unknown";
+  
+  // Extract location from headers if provided by frontend
+  const lat = req.headers["x-latitude"] ? parseFloat(req.headers["x-latitude"] as string) : undefined;
+  const lng = req.headers["x-longitude"] ? parseFloat(req.headers["x-longitude"] as string) : undefined;
+
+  return createAuditLog({
+    ...params,
+    user: {
+      id: req.user.userId,
+      name: req.user.name,
+      role: req.user.role,
+      email: req.user.email,
+    },
+    ipAddress: req.ip,
+    userAgent,
+    deviceName: getDeviceName(userAgent),
+    location: (lat && lng) ? { lat, lng } : undefined,
+  });
+};
+

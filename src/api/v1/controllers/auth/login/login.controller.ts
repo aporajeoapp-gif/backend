@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import UserModel from "../../../../../models/user.model";
 import { decryptPassword } from "../../../../../utils/passencryption.utils";
 import { generateToken } from "../../../../../utils/token.utils";
+import { createAuditLog } from "../../../../../services/auditLog.service";
 
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -51,5 +52,28 @@ export const login = async (req: Request, res: Response) => {
       role: user.role,
       permissions: user.permissions,
     },
+  });
+
+  // Audit Log
+  await createAuditLog({
+    user: {
+      id: user._id.toString(),
+      name: user.name,
+      role: user.role,
+      email: user.email,
+    },
+    action: "USER_LOGIN",
+    task: `User logged in: ${user.email}`,
+    details: `Successful login for user ${user.name}`,
+    severity: "low",
+    payload: { newData: { email: user.email, role: user.role } },
+    entityId: user._id.toString(),
+    entityModel: "Users",
+    ipAddress: req.ip,
+    userAgent: req.headers["user-agent"],
+    location: (req.headers["x-latitude"] && req.headers["x-longitude"]) ? {
+      lat: parseFloat(req.headers["x-latitude"] as string),
+      lng: parseFloat(req.headers["x-longitude"] as string)
+    } : undefined
   });
 };

@@ -6,6 +6,8 @@ export interface IAdvertisement {
     description: string;
     image: string;
     link?: string | null;
+    tag: string;
+    cta: string;
     startDate: Date;
     endDate: Date;
     status: AdsStatus;

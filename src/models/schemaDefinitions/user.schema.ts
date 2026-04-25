@@ -41,6 +41,7 @@ const userSchema = new Schema<IUser>(
       type: [String],
       default: [],
     },
+    avatar: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
     isEmailVerified: SCHEMA_DEFINATION_PROPERTIES.optionalBoolean,
     status: {
       type: String,

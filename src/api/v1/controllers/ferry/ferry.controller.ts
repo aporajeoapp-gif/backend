@@ -2,9 +2,7 @@ import { Request, Response } from "express";
 import FerryModel from "../../../../models/ferry.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import UserModel from "../../../../models/user.model";
-import { createAuditLog } from "../../../../services/auditLog.service";
-
-
+import { createAuditLogFromRequest } from "../../../../services/auditLog.service";
 
 export const createFerry = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -34,27 +32,17 @@ export const createFerry = async (req: AuthenticatedRequest, res: Response) => {
     res.status(201).json({ message: "Ferry route created successfully", ferry: newFerry });
 
     // Audit Log
-    if (req.user) {
-      await createAuditLog({
-        user: {
-          id: req.user.userId,
-          name: req.user.name,
-          role: req.user.role,
-          email: req.user.email,
-        },
-        action: "FERRY_CREATE",
-        task: `Created ferry: ${newFerry.ferryName}`,
-        details: `Created ferry route ${newFerry.routeName} (${newFerry.ferryNumber})`,
-        severity: "medium",
-        payload: {
-          newData: newFerry.toObject(),
-        },
-        entityId: newFerry._id.toString(),
-        entityModel: "FerryRoutes",
-        ipAddress: req.ip,
-        userAgent: req.headers["user-agent"],
-      });
-    }
+    await createAuditLogFromRequest(req, {
+      action: "FERRY_CREATE",
+      task: `Created ferry: ${newFerry.ferryName}`,
+      details: `Created ferry route ${newFerry.routeName} (${newFerry.ferryNumber})`,
+      severity: "medium",
+      payload: {
+        newData: newFerry.toObject(),
+      },
+      entityId: newFerry._id.toString(),
+      entityModel: "FerryRoutes",
+    });
   } catch (error: any) {
     console.error("Create Ferry Error:", error);
     res.status(500).json({ message: "Failed to create ferry route", error: error.message });
@@ -115,28 +103,18 @@ export const updateFerry = async (req: AuthenticatedRequest, res: Response) => {
       : `Updated ferry details for ${ferry.ferryName}`;
 
     // Audit Log
-    if (req.user) {
-      await createAuditLog({
-        user: {
-          id: req.user.userId,
-          name: req.user.name,
-          role: req.user.role,
-          email: req.user.email,
-        },
-        action: "FERRY_UPDATE",
-        task: `Updated ferry: ${ferry.ferryName}`,
-        details: changeDetails,
-        severity: "medium",
-        payload: {
-          oldData,
-          newData: ferry.toObject(),
-        },
-        entityId: ferry._id.toString(),
-        entityModel: "FerryRoutes",
-        ipAddress: req.ip,
-        userAgent: req.headers["user-agent"],
-      });
-    }
+    await createAuditLogFromRequest(req, {
+      action: "FERRY_UPDATE",
+      task: `Updated ferry: ${ferry.ferryName}`,
+      details: changeDetails,
+      severity: "medium",
+      payload: {
+        oldData,
+        newData: ferry.toObject(),
+      },
+      entityId: ferry._id.toString(),
+      entityModel: "FerryRoutes",
+    });
   } catch (error: any) {
     console.error("Update Ferry Error:", error);
     res.status(500).json({ message: "Failed to update ferry route", error: error.message });
@@ -162,29 +140,20 @@ export const deleteFerry = async (req: AuthenticatedRequest, res: Response) => {
     });
 
     // Audit Log
-    if (req.user) {
-      await createAuditLog({
-        user: {
-          id: req.user.userId,
-          name: req.user.name,
-          role: req.user.role,
-          email: req.user.email,
-        },
-        action: "FERRY_DELETE",
-        task: `Deleted ferry: ${ferry.ferryName}`,
-        details: `Permanently removed ferry ${ferry.ferryName} from route ${ferry.routeName}`,
-        severity: "high",
-        payload: {
-          oldData: ferry.toObject(),
-        },
-        entityId: ferry._id.toString(),
-        entityModel: "FerryRoutes",
-        ipAddress: req.ip,
-        userAgent: req.headers["user-agent"],
-      });
-    }
+    await createAuditLogFromRequest(req, {
+      action: "FERRY_DELETE",
+      task: `Deleted ferry: ${ferry.ferryName}`,
+      details: `Permanently removed ferry ${ferry.ferryName} from route ${ferry.routeName}`,
+      severity: "high",
+      payload: {
+        oldData: ferry.toObject(),
+      },
+      entityId: ferry._id.toString(),
+      entityModel: "FerryRoutes",
+    });
   } catch (error: any) {
     console.error("Delete Ferry Error:", error);
     res.status(500).json({ message: "Failed to delete ferry route", error: error.message });
   }
 };
+

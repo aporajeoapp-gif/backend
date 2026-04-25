@@ -4,9 +4,11 @@ import UserModel from "../../../../../models/user.model";
 import { decryptPassword, encryptPassword } from "../../../../../utils/passencryption.utils";
 import { createAuditLog } from "../../../../../services/auditLog.service";
 import { AuthenticatedRequest } from "../../../middleware/rbac.middleware";
+import { uploadToS3, deleteFromS3 } from "../../../../../utils/s3.utils";
 
 export const createUser = async (req: AuthenticatedRequest, res: Response) => {
   const { name, email, password, role, permissions } = req.body;
+  const file = req.file;
 
   if (!name || !email || !password || !role) {
     return res.status(400).json({
@@ -28,12 +30,24 @@ export const createUser = async (req: AuthenticatedRequest, res: Response) => {
 
   const hashedPassword = encryptPassword(password);
 
+  let avatarUrl = null;
+  if (file) {
+    const { secure_url } = await uploadToS3(
+      file.buffer,
+      "profileimage",
+      file.originalname,
+      file.mimetype
+    );
+    avatarUrl = secure_url;
+  }
+
   const newUser = await UserModel.create({
     name,
     email,
     password: hashedPassword,
     role,
     permissions: permissions || [],
+    avatar: avatarUrl,
     isEmailVerified: true, // Assuming admin-created accounts are verified or set to true by default
   });
 
@@ -122,7 +136,22 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
       "permissions",
       "isEmailVerified",
       "status",
+      "avatar",
     ];
+
+    if (req.file) {
+      if (user.avatar) {
+        await deleteFromS3(user.avatar);
+      }
+      const { secure_url } = await uploadToS3(
+        req.file.buffer,
+        "profileimage",
+        req.file.originalname,
+        req.file.mimetype
+      );
+      user.avatar = secure_url;
+    }
+
     const oldData = user.toObject();
 
     fieldsToUpdate.forEach((field) => {

@@ -28,8 +28,14 @@ const auditLogSchema = new Schema<IAuditLog>(
     entityModel: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
     ipAddress: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
     userAgent: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
+    deviceName: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
+    location: {
+      lat: { type: Number, default: null },
+      lng: { type: Number, default: null },
+    },
   },
   GENERAL_SCHEMA_OPTIONS,
 );
+
 
 export default auditLogSchema;

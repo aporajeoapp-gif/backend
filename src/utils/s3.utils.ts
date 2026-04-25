@@ -2,6 +2,10 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client
 import { Upload } from "@aws-sdk/lib-storage";
 import path from "path";
 
+console.log("DEBUG: Initializing S3 Client with region:", process.env.AWS_REGION || "ap-south-1");
+console.log("DEBUG: AWS_ACCESS_KEY_ID exists:", !!process.env.AWS_ACCESS_KEY_ID);
+console.log("DEBUG: AWS_SECRET_ACCESS_KEY exists:", !!process.env.AWS_SECRET_ACCESS_KEY);
+
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || "ap-south-1",
   credentials: {
@@ -18,7 +22,16 @@ export const uploadToS3 = async (
   fileName: string,
   contentType: string
 ): Promise<{ secure_url: string; public_id: string }> => {
+  console.log("DEBUG: S3_BUCKET_NAME from env:", process.env.S3_BUCKET_NAME);
+  console.log("DEBUG: BUCKET_NAME constant:", BUCKET_NAME);
+
+  if (!BUCKET_NAME) {
+    throw new Error("S3_BUCKET_NAME is not defined in environment variables");
+  }
+
   const key = `${folder}/${Date.now()}_${path.basename(fileName)}`;
+
+  console.log("DEBUG: Uploading to bucket:", BUCKET_NAME, "with key:", key);
 
   const upload = new Upload({
     client: s3Client,
@@ -27,11 +40,11 @@ export const uploadToS3 = async (
       Key: key,
       Body: fileBuffer,
       ContentType: contentType,
-      // ACL: "public-read", // Uncomment if your bucket allows public ACLs
     },
   });
 
   await upload.done();
+
 
   // Construct the URL. Note: If you use CloudFront, use that domain instead.
   const secure_url = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;

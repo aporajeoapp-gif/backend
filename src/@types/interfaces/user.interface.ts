@@ -9,6 +9,7 @@ export interface IUser {
   password?: string;
   role?: Role;
   permissions?: Permission[];
+  avatar?: string | null;
   isEmailVerified?: boolean;
   status?: "active" | "deactive";
 }
