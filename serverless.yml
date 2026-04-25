@@ -1,5 +1,5 @@
-service: readynx-backend
-frameworkVersion: '4'
+service: aporajeo-backend
+frameworkVersion: '3'
 
 provider:
   name: aws
