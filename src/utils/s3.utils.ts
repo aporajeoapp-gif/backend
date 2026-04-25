@@ -2,15 +2,15 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client
 import { Upload } from "@aws-sdk/lib-storage";
 import path from "path";
 
-console.log("DEBUG: Initializing S3 Client with region:", process.env.AWS_REGION || "ap-south-1");
-console.log("DEBUG: AWS_ACCESS_KEY_ID exists:", !!process.env.AWS_ACCESS_KEY_ID);
-console.log("DEBUG: AWS_SECRET_ACCESS_KEY exists:", !!process.env.AWS_SECRET_ACCESS_KEY);
+console.log("DEBUG: Initializing S3 Client with region:", process.env.S3_REGION || process.env.AWS_REGION || "ap-south-1");
+console.log("DEBUG: S3_ACCESS_KEY_ID or AWS_ACCESS_KEY_ID exists:", !!(process.env.S3_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID));
+console.log("DEBUG: S3_SECRET_ACCESS_KEY or AWS_SECRET_ACCESS_KEY exists:", !!(process.env.S3_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY));
 
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION || "ap-south-1",
+  region: process.env.S3_REGION || process.env.AWS_REGION || "ap-south-1",
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+    accessKeyId: process.env.S3_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY || "",
   },
 });
 
@@ -47,7 +47,7 @@ export const uploadToS3 = async (
 
 
   // Construct the URL. Note: If you use CloudFront, use that domain instead.
-  const secure_url = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+  const secure_url = `https://${BUCKET_NAME}.s3.${process.env.S3_REGION || process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${key}`;
 
   return {
     secure_url,
