@@ -12,4 +12,7 @@ export interface IUser {
   avatar?: string | null;
   isEmailVerified?: boolean;
   status?: "active" | "deactive";
+  phno?: string | null;
+  address?: string | null;
+  dob?: string | null;
 }

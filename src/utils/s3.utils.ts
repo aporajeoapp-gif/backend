@@ -2,9 +2,9 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client
 import { Upload } from "@aws-sdk/lib-storage";
 import path from "path";
 
-console.log("DEBUG: Initializing S3 Client with region:", process.env.S3_REGION || process.env.AWS_REGION || "ap-south-1");
-console.log("DEBUG: S3_ACCESS_KEY_ID or AWS_ACCESS_KEY_ID exists:", !!(process.env.S3_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID));
-console.log("DEBUG: S3_SECRET_ACCESS_KEY or AWS_SECRET_ACCESS_KEY exists:", !!(process.env.S3_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY));
+// console.log("DEBUG: Initializing S3 Client with region:", process.env.S3_REGION || process.env.AWS_REGION || "ap-south-1");
+// console.log("DEBUG: S3_ACCESS_KEY_ID or AWS_ACCESS_KEY_ID exists:", !!(process.env.S3_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID));
+// console.log("DEBUG: S3_SECRET_ACCESS_KEY or AWS_SECRET_ACCESS_KEY exists:", !!(process.env.S3_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY));
 
 const s3Client = new S3Client({
   region: process.env.S3_REGION || process.env.AWS_REGION || "ap-south-1",
@@ -22,8 +22,8 @@ export const uploadToS3 = async (
   fileName: string,
   contentType: string
 ): Promise<{ secure_url: string; public_id: string }> => {
-  console.log("DEBUG: S3_BUCKET_NAME from env:", process.env.S3_BUCKET_NAME);
-  console.log("DEBUG: BUCKET_NAME constant:", BUCKET_NAME);
+  // console.log("DEBUG: S3_BUCKET_NAME from env:", process.env.S3_BUCKET_NAME);
+  // console.log("DEBUG: BUCKET_NAME constant:", BUCKET_NAME);
 
   if (!BUCKET_NAME) {
     throw new Error("S3_BUCKET_NAME is not defined in environment variables");
@@ -31,7 +31,7 @@ export const uploadToS3 = async (
 
   const key = `${folder}/${Date.now()}_${path.basename(fileName)}`;
 
-  console.log("DEBUG: Uploading to bucket:", BUCKET_NAME, "with key:", key);
+  // console.log("DEBUG: Uploading to bucket:", BUCKET_NAME, "with key:", key);
 
   const upload = new Upload({
     client: s3Client,
@@ -46,7 +46,7 @@ export const uploadToS3 = async (
   await upload.done();
 
 
-  // Construct the URL. Note: If you use CloudFront, use that domain instead.
+
   const secure_url = `https://${BUCKET_NAME}.s3.${process.env.S3_REGION || process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/${key}`;
 
   return {
@@ -59,8 +59,7 @@ export const deleteFromS3 = async (urlOrKey: string): Promise<void> => {
   try {
     let key = urlOrKey;
     if (urlOrKey.startsWith("http")) {
-      // Extract key from URL
-      // https://bucket.s3.region.amazonaws.com/folder/filename
+     
       const parts = urlOrKey.split(".amazonaws.com/");
       if (parts.length > 1) {
         key = parts[1];

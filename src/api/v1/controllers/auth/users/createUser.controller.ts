@@ -6,8 +6,18 @@ import { createAuditLog } from "../../../../../services/auditLog.service";
 import { AuthenticatedRequest } from "../../../middleware/rbac.middleware";
 import { uploadToS3, deleteFromS3 } from "../../../../../utils/s3.utils";
 
+const normalizePermissions = (body: any): string[] | undefined => {
+  // Check for both 'permissions' and 'permissions[]' keys
+  const perms = body.permissions || body["permissions[]"];
+  if (perms === undefined) return undefined;
+  
+  const permsArray = Array.isArray(perms) ? perms : [perms];
+  return permsArray.filter((p) => p && p !== "__EMPTY__");
+};
+
 export const createUser = async (req: AuthenticatedRequest, res: Response) => {
-  const { name, email, password, role, permissions } = req.body;
+  const { name, email, password, role, phno, address, dob } = req.body;
+  const permissions = normalizePermissions(req.body) || [];
   const file = req.file;
 
   if (!name || !email || !password || !role) {
@@ -46,8 +56,11 @@ export const createUser = async (req: AuthenticatedRequest, res: Response) => {
     email,
     password: hashedPassword,
     role,
-    permissions: permissions || [],
+    permissions: permissions,
     avatar: avatarUrl,
+    phno: phno || null,
+    address: address || null,
+    dob: dob || null,
     isEmailVerified: true, // Assuming admin-created accounts are verified or set to true by default
   });
 
@@ -111,7 +124,12 @@ export const getAllUsers = async (req: AuthenticatedRequest, res: Response) => {
 export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const updateData = { ...req.body };
+
+    const normalizedPerms = normalizePermissions(req.body);
+    if (normalizedPerms !== undefined) {
+      updateData.permissions = normalizedPerms;
+    }
 
     if (!id) {
       return res.status(400).json({ message: "Missing required fields: id" });
@@ -137,6 +155,9 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
       "isEmailVerified",
       "status",
       "avatar",
+      "phno",
+      "address",
+      "dob",
     ];
 
     if (req.file) {
@@ -156,7 +177,7 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
 
     fieldsToUpdate.forEach((field) => {
       if (updateData[field] !== undefined) {
-        (user as any)[field] = updateData[field];
+        user.set(field, updateData[field]);
       }
     });
 

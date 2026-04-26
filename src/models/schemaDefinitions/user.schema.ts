@@ -48,6 +48,9 @@ const userSchema = new Schema<IUser>(
       enum: ["active", "deactive"],
       default: "active",
     },
+    phno: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
+    address: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
+    dob: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
   },
 
   GENERAL_SCHEMA_OPTIONS,

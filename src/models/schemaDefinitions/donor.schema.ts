@@ -7,6 +7,7 @@ const donorSchema = new Schema<IDonor>(
     {
         campId: SCHEMA_DEFINATION_PROPERTIES.requiredObjectId,
         name: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+        fatherName: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         bloodGroup: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         age: SCHEMA_DEFINATION_PROPERTIES.requiredNumber,
         phone: SCHEMA_DEFINATION_PROPERTIES.requiredString,

@@ -57,7 +57,7 @@ export const createEvent = async (req: AuthenticatedRequest, res: Response) => {
 
 export const getEvents = async (req: Request, res: Response) => {
   try {
-    const events = await EventModel.find().sort({ date: 1 });
+    const events = await EventModel.find().sort({ date: -1 });
     res.status(200).json(events);
   } catch (error: any) {
     console.error("Get Events Error:", error);
@@ -143,3 +143,12 @@ export const deleteEvent = async (req: AuthenticatedRequest, res: Response) => {
   }
 };
 
+export const getLatestEvents = async (req: Request, res: Response) => {
+  try {
+    const events = await EventModel.find().sort({ createdAt: -1 }).limit(5);
+    res.status(200).json(events);
+  } catch (error: any) {
+    console.error("Get Latest Events Error:", error);
+    res.status(500).json({ message: "Failed to fetch latest events", error: error.message });
+  }
+};

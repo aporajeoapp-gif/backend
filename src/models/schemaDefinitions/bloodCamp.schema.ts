@@ -18,6 +18,7 @@ const bloodCampSchema = new Schema<IBloodCamp>(
             default: []
         },
         banner_image: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
+        organizationLogo: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
         contactPhone: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         contactEmail: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         description: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
@@ -33,6 +34,10 @@ const bloodCampSchema = new Schema<IBloodCamp>(
             type: Number,
             required: true,
             default: 0
+        },
+        isPublished: {
+            type: Boolean,
+            default: false
         },
         createdBy: SCHEMA_DEFINATION_PROPERTIES.requiredObjectId,
     },

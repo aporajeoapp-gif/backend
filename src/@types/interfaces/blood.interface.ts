@@ -12,6 +12,7 @@ export interface IBloodCamp {
     city: string;
     bloodGroupsNeeded: string[];
     banner_image?: string | null;
+    organizationLogo?: string | null;
     contactPhone: string;
     contactEmail: string;
     description?: string;
@@ -19,6 +20,7 @@ export interface IBloodCamp {
     targetUnits: number;
     collectedUnits: number;
     createdBy: Types.ObjectId;
+    isPublished: boolean;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -26,6 +28,7 @@ export interface IBloodCamp {
 export interface IDonor {
     campId: Types.ObjectId;
     name: string;
+    fatherName: string;
     bloodGroup: string;
     age: number;
     phone: string;
@@ -35,3 +38,4 @@ export interface IDonor {
     expiresAt?: Date | null;
     createdAt?: Date;
 }
+

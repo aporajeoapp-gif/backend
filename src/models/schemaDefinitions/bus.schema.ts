@@ -6,7 +6,6 @@ import { GENERAL_SCHEMA_OPTIONS } from "../../constants/model/schemaOption";
 const busSchema = new Schema<IBusRoute>(
   {
     busName: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
-    routeNumber: SCHEMA_DEFINATION_PROPERTIES.requiredString,
     routeName: {
       type: [String],
       required: true,

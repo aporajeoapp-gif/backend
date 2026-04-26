@@ -6,7 +6,7 @@ import { createAuditLogFromRequest } from "../../../../services/auditLog.service
 
 export const createBus = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { busName, routeNumber, routeName, stops, timings, fare } =
+    const { busName, routeName, stops, timings, fare } =
       req.body;
     const createdBy = req.user?.userId;
 
@@ -23,7 +23,6 @@ export const createBus = async (req: AuthenticatedRequest, res: Response) => {
     const creatorName = user.name;
     const newBus = await BusModel.create({
       busName,
-      routeNumber,
       routeName,
       stops,
       timings,
@@ -37,7 +36,7 @@ export const createBus = async (req: AuthenticatedRequest, res: Response) => {
     await createAuditLogFromRequest(req, {
       action: "BUS_CREATE",
       task: `Created bus: ${newBus.busName}`,
-      details: `Created bus on route ${newBus.routeName} (${newBus.routeNumber})`,
+      details: `Created bus on route ${newBus.routeName}`,
       severity: "medium",
       payload: {
         newData: newBus.toObject(),
@@ -81,7 +80,6 @@ export const updateBus = async (req: AuthenticatedRequest, res: Response) => {
 
     const fieldsToUpdate = [
       "busName",
-      "routeNumber",
       "routeName",
       "stops",
       "timings",

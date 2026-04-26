@@ -3,7 +3,7 @@ import { Router } from "express";
 import authMiddleware from "../middleware/auth.middleware";
 import { authorize } from "../middleware/rbac.middleware";
 import upload from "../middleware/multer.middleware";
-import { getCurrentUser, updateProfile } from "../controllers/auth/users/getuser.controller";
+import { getCurrentUser, updateProfile, getBirthdayUsers } from "../controllers/auth/users/getuser.controller";
 import {
   createUser,
   getAllUsers,
@@ -15,6 +15,7 @@ const userrouter = Router();
 
 userrouter.get("/me", authMiddleware, getCurrentUser);
 userrouter.put("/update-profile", authMiddleware, upload.single("avatar"), updateProfile);
+userrouter.get("/birthday-users", authMiddleware, getBirthdayUsers);
 userrouter.post(
   "/createuser",
   authMiddleware,

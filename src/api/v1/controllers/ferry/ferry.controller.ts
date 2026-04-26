@@ -6,7 +6,7 @@ import { createAuditLogFromRequest } from "../../../../services/auditLog.service
 
 export const createFerry = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { ferryName, ferryNumber, routeName, stops, timings, fare } = req.body;
+    const { ferryName, routeName, stops, timings, fare } = req.body;
     const createdBy = req.user?.userId;
 
     if (!createdBy) {
@@ -21,7 +21,6 @@ export const createFerry = async (req: AuthenticatedRequest, res: Response) => {
     const creatorName = user.name;
     const newFerry = await FerryModel.create({
       ferryName,
-      ferryNumber,
       routeName,
       stops,
       timings,
@@ -35,7 +34,7 @@ export const createFerry = async (req: AuthenticatedRequest, res: Response) => {
     await createAuditLogFromRequest(req, {
       action: "FERRY_CREATE",
       task: `Created ferry: ${newFerry.ferryName}`,
-      details: `Created ferry route ${newFerry.routeName} (${newFerry.ferryNumber})`,
+      details: `Created ferry route ${newFerry.routeName}`,
       severity: "medium",
       payload: {
         newData: newFerry.toObject(),
@@ -75,7 +74,6 @@ export const updateFerry = async (req: AuthenticatedRequest, res: Response) => {
 
     const fieldsToUpdate = [
       "ferryName",
-      "ferryNumber",
       "routeName",
       "stops",
       "timings",

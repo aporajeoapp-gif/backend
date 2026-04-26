@@ -1,6 +1,5 @@
 export interface IBusRoute {
   busName?: string | null;
-  routeNumber: string;
   routeName: string[];
   stops: string[];
   timings: { departure: string; arrival: string }[];

@@ -7,7 +7,7 @@ export interface IDoctorSchedule {
 export interface IDoctor {
     name: string;
     specialty: string;
-    experience: number;
+    personalNo?: string | null;
     location: string;
     phone: string;
     email?: string | null;

@@ -6,7 +6,6 @@ import { GENERAL_SCHEMA_OPTIONS } from "../../constants/model/schemaOption";
 const ferrySchema = new Schema<IFerryRoute>(
   {
     ferryName: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
-    ferryNumber: SCHEMA_DEFINATION_PROPERTIES.requiredString,
     // route: SCHEMA_DEFINATION_PROPERTIES.requiredString,
     // startPoint: SCHEMA_DEFINATION_PROPERTIES.requiredString,
     // endPoint: SCHEMA_DEFINATION_PROPERTIES.requiredString,

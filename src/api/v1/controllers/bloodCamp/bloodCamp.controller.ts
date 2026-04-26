@@ -10,14 +10,30 @@ export const createBloodCamp = async (req: AuthenticatedRequest, res: Response) 
     const { campName, organizer, date, time, location, address, city, bloodGroupsNeeded, contactPhone, contactEmail, description, status, targetUnits, collectedUnits } = req.body;
 
     let banner_image = null;
-    if (req.file) {
-      const uploadResult = await uploadToS3(
-        req.file.buffer,
-        "blood_camps",
-        req.file.originalname,
-        req.file.mimetype
-      );
-      banner_image = uploadResult.secure_url;
+    let organizationLogo = null;
+    
+    if (req.files && typeof req.files === 'object') {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      
+      if (files['banner'] && files['banner'][0]) {
+        const uploadResult = await uploadToS3(
+          files['banner'][0].buffer,
+          "blood_camps",
+          files['banner'][0].originalname,
+          files['banner'][0].mimetype
+        );
+        banner_image = uploadResult.secure_url;
+      }
+      
+      if (files['organizationLogo'] && files['organizationLogo'][0]) {
+        const uploadResult = await uploadToS3(
+          files['organizationLogo'][0].buffer,
+          "blood_camps_logos",
+          files['organizationLogo'][0].originalname,
+          files['organizationLogo'][0].mimetype
+        );
+        organizationLogo = uploadResult.secure_url;
+      }
     }
 
     const newCamp = await BloodCampModel.create({
@@ -30,10 +46,11 @@ export const createBloodCamp = async (req: AuthenticatedRequest, res: Response) 
       city,
       bloodGroupsNeeded: typeof bloodGroupsNeeded === 'string' ? JSON.parse(bloodGroupsNeeded) : bloodGroupsNeeded,
       banner_image,
+      organizationLogo,
       contactPhone,
       contactEmail,
       description,
-      status, 
+      status: status || "upcoming", 
       targetUnits,
       collectedUnits,
       createdBy: req.user?.userId,
@@ -62,8 +79,41 @@ export const createBloodCamp = async (req: AuthenticatedRequest, res: Response) 
 
 export const getBloodCamps = async (req: Request, res: Response) => {
   try {
-    const camps = await BloodCampModel.find().sort({ date: 1 });
-    res.status(200).json(camps);
+    const query: any = {};
+    // If no authorization header, only show published camps (Public View)
+    if (!req.headers.authorization) {
+      query.isPublished = true;
+    }
+    
+    const camps = await BloodCampModel.find(query).sort({ date: 1 });
+    
+    // Auto update status logic based on date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
+
+    const updatedCampsPromises = camps.map(async (camp) => {
+      let newStatus = camp.status;
+      const campDateStr = new Date(camp.date).toISOString().split('T')[0];
+
+      if (campDateStr < todayStr) {
+        newStatus = 'completed';
+      } else if (campDateStr === todayStr) {
+        newStatus = 'ongoing';
+      }
+      // If it's in the future and status isn't manually changed from upcoming, stay upcoming
+      // But user says: "bydefault will be upcoming... after complete auto update completed"
+      // So we mainly care about auto-transitioning to ongoing/completed.
+
+      if (newStatus !== camp.status) {
+        camp.status = newStatus as any;
+        await camp.save();
+      }
+      return camp;
+    });
+
+    const result = await Promise.all(updatedCampsPromises);
+    res.status(200).json(result);
   } catch (error: any) {
     console.error("Get Blood Camps Error:", error);
     res.status(500).json({ message: "Failed to fetch blood camps", error: error.message });
@@ -78,12 +128,15 @@ export const getBloodCampById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Blood Donation Camp not found" });
     }
 
-    // Fetch approved donors for this camp to show in public preview
-    const approvedDonors = await DonorModel.find({ campId: id, status: 'approved' }).sort({ createdAt: -1 });
+    // Fetch approved donors for this camp to show in public preview if published
+    let donors: any[] = [];
+    if (camp.isPublished) {
+      donors = await DonorModel.find({ campId: id, status: 'approved' }).sort({ createdAt: -1 });
+    }
 
     res.status(200).json({
       ...camp.toObject(),
-      donors: approvedDonors
+      donors: donors
     });
   } catch (error: any) {
     console.error("Get Blood Camp By Id Error:", error);
@@ -103,19 +156,34 @@ export const updateBloodCamp = async (req: AuthenticatedRequest, res: Response) 
 
     const oldData = camp.toObject();
 
-    if (req.file) {
-      // If there's an old image, delete it from S3
-      if (camp.banner_image) {
-        await deleteFromS3(camp.banner_image);
+    if (req.files && typeof req.files === 'object') {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      
+      if (files['banner'] && files['banner'][0]) {
+        if (camp.banner_image) {
+          await deleteFromS3(camp.banner_image);
+        }
+        const uploadResult = await uploadToS3(
+          files['banner'][0].buffer,
+          "blood_camps",
+          files['banner'][0].originalname,
+          files['banner'][0].mimetype
+        );
+        updateData.banner_image = uploadResult.secure_url;
       }
       
-      const uploadResult = await uploadToS3(
-        req.file.buffer,
-        "blood_camps",
-        req.file.originalname,
-        req.file.mimetype
-      );
-      updateData.banner_image = uploadResult.secure_url;
+      if (files['organizationLogo'] && files['organizationLogo'][0]) {
+        if (camp.organizationLogo) {
+          await deleteFromS3(camp.organizationLogo);
+        }
+        const uploadResult = await uploadToS3(
+          files['organizationLogo'][0].buffer,
+          "blood_camps_logos",
+          files['organizationLogo'][0].originalname,
+          files['organizationLogo'][0].mimetype
+        );
+        updateData.organizationLogo = uploadResult.secure_url;
+      }
     }
 
     if (updateData.bloodGroupsNeeded && typeof updateData.bloodGroupsNeeded === 'string') {

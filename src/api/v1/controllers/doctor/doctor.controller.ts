@@ -9,7 +9,7 @@ export const createDoctor = async (
   res: Response,
 ) => {
   try {
-    const { name, specialty, experience, location, phone, email, schedule } =
+    const { name, specialty, personalNo, location, phone, email, schedule } =
       req.body;
 
     const createdBy = req.user?.userId;
@@ -28,7 +28,7 @@ export const createDoctor = async (
     const newDoctor = await DoctorModel.create({
       name,
       specialty,
-      experience,
+      personalNo,
       location,
       phone,
       email,
@@ -92,7 +92,7 @@ export const updateDoctor = async (req: AuthenticatedRequest, res: Response) => 
     const fieldsToUpdate = [
       "name",
       "specialty",
-      "experience",
+      "personalNo",
       "location",
       "phone",
       "email",

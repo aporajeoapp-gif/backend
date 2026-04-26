@@ -17,7 +17,7 @@ bloodCampRouter.post(
   "/create-camp",
   authMiddleware,
   authorize(undefined, "blood.create"),
-  upload.single("banner"),
+  upload.fields([{ name: "banner", maxCount: 1 }, { name: "organizationLogo", maxCount: 1 }]),
   createBloodCamp
 );
 
@@ -25,7 +25,7 @@ bloodCampRouter.put(
   "/update-camp/:id",
   authMiddleware,
   authorize(undefined, "blood.update"),
-  upload.single("banner"),
+  upload.fields([{ name: "banner", maxCount: 1 }, { name: "organizationLogo", maxCount: 1 }]),
   updateBloodCamp
 );
 

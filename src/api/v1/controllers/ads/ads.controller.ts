@@ -61,7 +61,19 @@ export const createAd = async (req: AuthenticatedRequest, res: Response) => {
 
 export const getAds = async (req: Request, res: Response) => {
   try {
-    const ads = await AdsModel.find().sort({ createdAt: -1 });
+    const { status } = req.query;
+    const filter: any = {};
+    if (status) {
+      filter.status = status;
+    }
+
+    // If public request (no auth), exclude expired ads
+    if (!req.headers.authorization) {
+      if (filter.status === "expired") return res.status(200).json([]);
+      if (!filter.status) filter.status = { $ne: "expired" };
+    }
+
+    const ads = await AdsModel.find(filter).sort({ createdAt: -1 });
     res.status(200).json(ads);
   } catch (error: any) {
     console.error("Get Ads Error:", error);

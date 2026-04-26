@@ -7,7 +7,7 @@ const doctorSchema = new Schema<IDoctor>(
     {
         name: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         specialty: SCHEMA_DEFINATION_PROPERTIES.requiredString,
-        experience: SCHEMA_DEFINATION_PROPERTIES.requiredNumber,
+        personalNo: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
         location: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         phone: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         email: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,

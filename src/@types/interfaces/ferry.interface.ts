@@ -1,6 +1,5 @@
 export interface IFerryRoute {
   ferryName?: string | null;
-  ferryNumber: string;
   // route: string;
   // startPoint: string;
   // endPoint: string;

@@ -6,10 +6,10 @@ import { createAuditLogFromRequest } from "../../../../services/auditLog.service
 
 export const addDonorToCamp = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { campId, name, bloodGroup, age, phone, donatedAt } = req.body;
+    const { campId, name, fatherName, bloodGroup, age, phone, donatedAt } = req.body;
     console.log("Adding donor to camp (Admin):", campId, { name, bloodGroup, age, phone });
 
-    if (!campId || !name || !bloodGroup || !age || !phone) {
+    if (!campId || !name || !bloodGroup || !age || !phone || !fatherName) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -21,6 +21,7 @@ export const addDonorToCamp = async (req: AuthenticatedRequest, res: Response) =
     const newDonor = await DonorModel.create({
       campId,
       name,
+      fatherName,
       bloodGroup,
       age,
       phone,
@@ -58,10 +59,10 @@ export const addDonorToCamp = async (req: AuthenticatedRequest, res: Response) =
 
 export const publicDonorRegistration = async (req: Request, res: Response) => {
   try {
-    const { campId, name, bloodGroup, age, phone } = req.body;
+    const { campId, name, fatherName, bloodGroup, age, phone } = req.body;
     console.log("Public Donor Registration:", campId, { name, bloodGroup, age, phone });
 
-    if (!campId || !name || !bloodGroup || !age || !phone) {
+    if (!campId || !name || !bloodGroup || !age || !phone || !fatherName) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -73,6 +74,7 @@ export const publicDonorRegistration = async (req: Request, res: Response) => {
     const newDonor = await DonorModel.create({
       campId,
       name,
+      fatherName,
       bloodGroup,
       age,
       phone,
