@@ -34,7 +34,7 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: true,
       trim: true,
-      enum: ["admin", "coordinator", "member"],
+      enum: ["super_admin", "admin", "coordinator", "member"],
       default: "member",
     },
     permissions: {

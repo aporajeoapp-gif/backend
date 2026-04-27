@@ -6,18 +6,27 @@ import { createAuditLog } from "../../../../../services/auditLog.service";
 import { AuthenticatedRequest } from "../../../middleware/rbac.middleware";
 import { uploadToS3, deleteFromS3 } from "../../../../../utils/s3.utils";
 
-const normalizePermissions = (body: any): string[] | undefined => {
+const normalizePermissions = (body: any, requester: any): string[] | undefined => {
   // Check for both 'permissions' and 'permissions[]' keys
   const perms = body.permissions || body["permissions[]"];
   if (perms === undefined) return undefined;
   
   const permsArray = Array.isArray(perms) ? perms : [perms];
-  return permsArray.filter((p) => p && p !== "__EMPTY__");
+  const requestedPerms = permsArray.filter((p) => p && p !== "__EMPTY__");
+
+  // If requester is super_admin or admin, they can grant any permission
+  if (requester?.role === "super_admin" || requester?.role === "admin") return requestedPerms;
+
+  // Otherwise, requester can only grant subset of their own permissions (e.g. Coordinators)
+  const requesterPerms = requester?.permissions || [];
+  if (requesterPerms.includes("*")) return requestedPerms;
+
+  return requestedPerms.filter(p => requesterPerms.includes(p));
 };
 
 export const createUser = async (req: AuthenticatedRequest, res: Response) => {
   const { name, email, password, role, phno, address, dob } = req.body;
-  const permissions = normalizePermissions(req.body) || [];
+  const permissions = normalizePermissions(req.body, req.user) || [];
   const file = req.file;
 
   if (!name || !email || !password || !role) {
@@ -26,9 +35,15 @@ export const createUser = async (req: AuthenticatedRequest, res: Response) => {
     });
   }
 
-  const validRoles = ["admin", "coordinator", "member"];
+  const validRoles: string[] = [];
+  if (req.user?.role === "super_admin") {
+    validRoles.push("admin", "coordinator", "member");
+  } else if (req.user?.role === "admin") {
+    validRoles.push("admin", "coordinator", "member");
+  }
+
   if (!validRoles.includes(role)) {
-    return res.status(400).json({ message: "Invalid role" });
+    return res.status(403).json({ message: "Forbidden: You do not have permission to create this role" });
   }
 
   const userExists = await UserModel.findOne({ email });
@@ -103,7 +118,9 @@ export const createUser = async (req: AuthenticatedRequest, res: Response) => {
 
 export const getAllUsers = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const users = await UserModel.find().sort({ createdAt: -1 });
+    const query = { role: { $ne: "super_admin" } };
+    
+    const users = await UserModel.find(query).sort({ createdAt: -1 });
     const result = users.map((user) => {
       const decrypted = decryptPassword(user.password || "");
       return {
@@ -126,7 +143,7 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     const updateData = { ...req.body };
 
-    const normalizedPerms = normalizePermissions(req.body);
+    const normalizedPerms = normalizePermissions(req.body, req.user);
     if (normalizedPerms !== undefined) {
       updateData.permissions = normalizedPerms;
     }
@@ -138,6 +155,44 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
     const user = await UserModel.findById(id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    // Role Hierarchy & Permission Constraints
+    if (req.user) {
+      const requesterRole = req.user.role;
+      const targetRole = user.role;
+
+      // Cannot update Super Admin unless you are Super Admin
+      if (targetRole === "super_admin" && requesterRole !== "super_admin") {
+        return res.status(403).json({ message: "Forbidden: Cannot update Super Admin" });
+      }
+
+      // Hierarchy & Permission Rules
+      if (requesterRole === "coordinator") {
+        // Coordinators cannot edit permissions for ANYONE
+        if (updateData.permissions) delete updateData.permissions;
+      }
+
+      // Admins cannot change their own permissions
+      if (requesterRole === "admin" && id === req.user.userId) {
+         if (updateData.permissions) {
+            delete updateData.permissions;
+         }
+      }
+
+      // Hierarchy check for role change
+      if (updateData.role && updateData.role !== targetRole) {
+        const allowedRoles: string[] = [];
+        if (requesterRole === "super_admin") {
+          allowedRoles.push("admin", "coordinator", "member");
+        } else if (requesterRole === "admin") {
+          allowedRoles.push("admin", "coordinator", "member");
+        }
+
+        if (!allowedRoles.includes(updateData.role)) {
+          return res.status(403).json({ message: "Forbidden: Cannot change role to " + updateData.role });
+        }
+      }
     }
 
     if (updateData.email && updateData.email !== user.email) {
@@ -236,9 +291,30 @@ export const deleteUser = async (req: AuthenticatedRequest, res: Response) => {
       return res.status(400).json({ message: "Missing required fields: id" });
     }
 
+    const userToDelete = await UserModel.findById(id);
+    if (!userToDelete) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Hierarchy check
+    if (req.user) {
+      if (userToDelete.role === "super_admin" && req.user.role !== "super_admin") {
+        return res.status(403).json({ message: "Forbidden: Cannot delete Super Admin" });
+      }
+      
+      if (req.user.role === "admin" && userToDelete.role === "admin" && id !== req.user.userId) {
+          // One admin can delete another admin? Usually yes if permissions allow, but user said "another admin can edit other admin"
+          // We leave it for now or restrict it if needed.
+      }
+    }
+
     const user = await UserModel.findByIdAndDelete(id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.avatar) {
+      await deleteFromS3(user.avatar);
     }
 
     res.status(200).json({

@@ -41,8 +41,8 @@ export const authorize = (
         req.user.role = user.role as Role;
       }
 
-      // Admin bypass
-      if (user.role === "admin") {
+      // Super Admin bypass
+      if (user.role === "super_admin") {
         return next();
       }
 

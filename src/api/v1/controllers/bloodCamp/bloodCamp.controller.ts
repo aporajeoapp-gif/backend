@@ -225,9 +225,12 @@ export const deleteBloodCamp = async (req: AuthenticatedRequest, res: Response) 
       return res.status(404).json({ message: "Blood Donation Camp not found" });
     }
 
-    // Delete the image from S3 if it exists
+    // Delete images from S3 if they exist
     if (camp.banner_image) {
       await deleteFromS3(camp.banner_image);
+    }
+    if (camp.organizationLogo) {
+      await deleteFromS3(camp.organizationLogo);
     }
 
     res.status(200).json({
