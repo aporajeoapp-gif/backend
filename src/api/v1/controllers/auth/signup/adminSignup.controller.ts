@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import UserModel from "../../../../../models/user.model";
 import { encryptPassword } from "../../../../../utils/passencryption.utils";
-import { createAuditLog } from "../../../../../services/auditLog.service";
+import { createAuditLog } from "../../../../../utils/logger";
 
 export const adminSignup = async (req: Request, res: Response) => {
   const { name, email, password } = req.body;

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import BusModel from "../../../../models/bus.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import UserModel from "../../../../models/user.model";
-import { createAuditLogFromRequest } from "../../../../services/auditLog.service";
+import { createAuditLogFromRequest } from "../../../../utils/logger";
 
 export const createBus = async (req: AuthenticatedRequest, res: Response) => {
   try {

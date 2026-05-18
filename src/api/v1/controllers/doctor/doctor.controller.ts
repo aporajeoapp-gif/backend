@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import DoctorModel from "../../../../models/doctor.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import UserModel from "../../../../models/user.model";
-import { createAuditLogFromRequest } from "../../../../services/auditLog.service";
+import { createAuditLogFromRequest } from "../../../../utils/logger";
 
 export const createDoctor = async (
   req: AuthenticatedRequest,

@@ -2,7 +2,7 @@ import { Response,Request } from "express";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import UserModel from "../../../../models/user.model";
 import EmergencyModel from "../../../../models/emergency.model";
-import { createAuditLogFromRequest } from "../../../../services/auditLog.service";
+import { createAuditLogFromRequest } from "../../../../utils/logger";
 
 export const createEmergencyService = async (
   req: AuthenticatedRequest,

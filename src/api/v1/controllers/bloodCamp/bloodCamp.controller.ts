@@ -3,7 +3,7 @@ import BloodCampModel from "../../../../models/bloodCamp.model";
 import DonorModel from "../../../../models/donor.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import { uploadToS3, deleteFromS3 } from "../../../../utils/s3.utils";
-import { createAuditLogFromRequest } from "../../../../services/auditLog.service";
+import { createAuditLogFromRequest } from "../../../../utils/logger";
 
 export const createBloodCamp = async (req: AuthenticatedRequest, res: Response) => {
   try {

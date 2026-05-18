@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import AdsModel from "../../../../models/ads.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import { uploadToS3, deleteFromS3 } from "../../../../utils/s3.utils";
-import { createAuditLogFromRequest } from "../../../../services/auditLog.service";
+import { createAuditLogFromRequest } from "../../../../utils/logger";
 
 export const createAd = async (req: AuthenticatedRequest, res: Response) => {
   try {

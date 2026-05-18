@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createAuditLogFromRequest } from "../../../../services/auditLog.service";
+import { createAuditLogFromRequest } from "../../../../utils/logger";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 
 export const bulkInsert = (Model: any) => {

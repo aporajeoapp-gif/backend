@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import FerryModel from "../../../../models/ferry.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import UserModel from "../../../../models/user.model";
-import { createAuditLogFromRequest } from "../../../../services/auditLog.service";
+import { createAuditLogFromRequest } from "../../../../utils/logger";
 
 export const createFerry = async (req: AuthenticatedRequest, res: Response) => {
   try {

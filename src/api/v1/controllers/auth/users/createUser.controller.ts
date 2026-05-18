@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import UserModel from "../../../../../models/user.model";
 import { decryptPassword, encryptPassword } from "../../../../../utils/passencryption.utils";
-import { createAuditLog } from "../../../../../services/auditLog.service";
+import { createAuditLog } from "../../../../../utils/logger";
 import { AuthenticatedRequest } from "../../../middleware/rbac.middleware";
 import { uploadToS3, deleteFromS3 } from "../../../../../utils/s3.utils";
 

@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import UserModel from "../../../../../models/user.model";
 import { decryptPassword } from "../../../../../utils/passencryption.utils";
 import { generateToken } from "../../../../../utils/token.utils";
-import { createAuditLog } from "../../../../../services/auditLog.service";
+import { createAuditLog } from "../../../../../utils/logger";
 
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;

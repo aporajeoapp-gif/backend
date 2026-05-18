@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import DonorModel from "../../../../models/donor.model";
 import BloodCampModel from "../../../../models/bloodCamp.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
-import { createAuditLogFromRequest } from "../../../../services/auditLog.service";
+import { createAuditLogFromRequest } from "../../../../utils/logger";
 
 export const addDonorToCamp = async (req: AuthenticatedRequest, res: Response) => {
   try {
