@@ -14,7 +14,7 @@ eventRouter.get("/get-latest-events", getLatestEvents);
 eventRouter.post(
   "/create-event",
   authMiddleware,
-  authorize(undefined, "event.create"),
+  authorize(undefined, "events.create"),
   upload.single("image"),
   createEvent
 );
@@ -22,7 +22,7 @@ eventRouter.post(
 eventRouter.put(
   "/update-event/:id",
   authMiddleware,
-  authorize(undefined, "event.update"),
+  authorize(undefined, "events.update"),
   upload.single("image"),
   updateEvent
 );
@@ -30,7 +30,7 @@ eventRouter.put(
 eventRouter.delete(
   "/delete-event/:id",
   authMiddleware,
-  authorize(undefined, "event.delete"),
+  authorize(undefined, "events.delete"),
   deleteEvent
 );
 

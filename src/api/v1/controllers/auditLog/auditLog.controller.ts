@@ -61,44 +61,73 @@ const sanitizeData = (data: any): any => {
   return sanitized;
 };
 
+const buildAuditQuery = (queryParams: any) => {
+  const {
+    search,
+    action,
+    severity,
+    startDate,
+    endDate,
+  } = queryParams;
+
+  const query: any = {};
+
+  if (search) {
+    query.$or = [
+      { userName: { $regex: search, $options: "i" } },
+      { userEmail: { $regex: search, $options: "i" } },
+      { task: { $regex: search, $options: "i" } },
+      { details: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  if (action) query.action = action;
+  if (severity) query.severity = severity;
+
+  if (startDate || endDate) {
+    query.createdAt = {};
+    if (startDate) query.createdAt.$gte = new Date(startDate as string);
+    if (endDate) query.createdAt.$lte = new Date(endDate as string);
+  }
+
+  return query;
+};
+
+const buildAuditSort = (queryParams: any) => {
+  const { sortBy = "date", sortOrder = "desc" } = queryParams;
+  const sortDir = String(sortOrder).toLowerCase() === "asc" ? 1 : -1;
+  const sortField = String(sortBy).toLowerCase() === "action" ? "action" : "createdAt";
+  const sortConfig: any = {};
+  sortConfig[sortField] = sortDir;
+  if (sortField !== "createdAt") {
+    sortConfig.createdAt = -1;
+  }
+  return sortConfig;
+};
+
+const csvEscape = (value: any): string => {
+  if (value === null || value === undefined) return "";
+  const str = String(value).replace(/"/g, '""');
+  return `"${str}"`;
+};
+
 
 export const getAllAuditLogs = async (req: Request, res: Response) => {
   try {
     const { 
       page = 1, 
       limit = 10, 
-      search, 
-      action, 
-      severity, 
-      startDate, 
-      endDate 
+      ...restQuery
     } = req.query as any;
 
-    const query: any = {};
+    const query = buildAuditQuery(restQuery);
 
-    if (search) {
-      query.$or = [
-        { userName: { $regex: search, $options: "i" } },
-        { userEmail: { $regex: search, $options: "i" } },
-        { task: { $regex: search, $options: "i" } },
-        { details: { $regex: search, $options: "i" } },
-      ];
-    }
-
-    if (action) query.action = action;
-    if (severity) query.severity = severity;
-
-    if (startDate || endDate) {
-      query.createdAt = {};
-      if (startDate) query.createdAt.$gte = new Date(startDate as string);
-      if (endDate) query.createdAt.$lte = new Date(endDate as string);
-    }
-
-    const p = parseInt(page as string, 10) || 1;
-    const l = parseInt(limit as string, 10) || 10;
+    const p = Math.max(parseInt(page as string, 10) || 1, 1);
+    const l = Math.min(Math.max(parseInt(limit as string, 10) || 10, 1), 100);
+    const sortConfig = buildAuditSort(restQuery);
 
     const logs = await AuditLogModel.find(query)
-      .sort({ createdAt: -1 })
+      .sort(sortConfig)
       .skip((p - 1) * l)
       .limit(l)
       .populate("user", "name email role");
@@ -128,6 +157,68 @@ export const getAllAuditLogs = async (req: Request, res: Response) => {
   }
 };
 
+export const exportAuditLogsCsv = async (req: Request, res: Response) => {
+  try {
+    const query = buildAuditQuery(req.query as any);
+    const sortConfig = buildAuditSort(req.query as any);
+
+    const logs = await AuditLogModel.find(query)
+      .sort(sortConfig)
+      .populate("user", "name email role");
+
+    const sanitizedLogs = logs.map((log: any) => sanitizeData(log));
+
+    const headers = [
+      "timestamp",
+      "userName",
+      "userEmail",
+      "userRole",
+      "action",
+      "task",
+      "details",
+      "severity",
+      "entityModel",
+      "entityId",
+      "ipAddress",
+      "userAgent",
+    ];
+
+    const rows = sanitizedLogs.map((log: any) => [
+      log.createdAt || "",
+      log.userName || "",
+      log.userEmail || "",
+      log.userRole || "",
+      log.action || "",
+      log.task || "",
+      log.details || "",
+      log.severity || "",
+      log.entityModel || "",
+      log.entityId || "",
+      log.ipAddress || "",
+      log.userAgent || "",
+    ]);
+
+    const csv = [headers, ...rows]
+      .map((row) => row.map(csvEscape).join(","))
+      .join("\n");
+
+    const datePart = new Date().toISOString().slice(0, 10);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="audit-logs-${datePart}.csv"`,
+    );
+    res.status(200).send(csv);
+  } catch (error: any) {
+    console.error("Export Audit Logs CSV Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to export audit logs CSV",
+      error: error.message,
+    });
+  }
+};
+
 
 export const getAuditLogById = async (req: Request, res: Response) => {
   try {
@@ -148,6 +239,31 @@ export const getAuditLogById = async (req: Request, res: Response) => {
       success: false, 
       message: "Failed to fetch audit log", 
       error: error.message 
+    });
+  }
+};
+
+export const getAuditActions = async (_req: Request, res: Response) => {
+  try {
+    const actions = await AuditLogModel.distinct("action", {
+      action: { $nin: [null, ""] },
+    });
+
+    const normalized = actions
+      .map((action) => String(action).trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+
+    res.status(200).json({
+      success: true,
+      data: normalized,
+    });
+  } catch (error: any) {
+    console.error("Get Audit Actions Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch audit actions",
+      error: error.message,
     });
   }
 };

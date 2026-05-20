@@ -12,21 +12,21 @@ doctorRouter.get("/get-all-doctors", getDoctors);
 doctorRouter.post(
   "/create-doctor",
   authMiddleware,
-  authorize(undefined, "doctor.create"),
+  authorize(undefined, "doctors.create"),
   createDoctor
 );
 
 doctorRouter.put(
   "/update-doctor/:id",
   authMiddleware,
-  authorize(undefined, "doctor.update"),
+  authorize(undefined, "doctors.update"),
   updateDoctor
 );
 
 doctorRouter.delete(
   "/delete-doctor/:id",
   authMiddleware,
-  authorize(undefined, "doctor.delete"),
+  authorize(undefined, "doctors.delete"),
   deleteDoctor
 );
 
