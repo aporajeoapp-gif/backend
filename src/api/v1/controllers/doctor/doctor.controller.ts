@@ -3,6 +3,44 @@ import DoctorModel from "../../../../models/doctor.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import UserModel from "../../../../models/user.model";
 import { createAuditLogFromRequest } from "../../../../utils/logger";
+import { IDoctorSchedule } from "../../../../@types/interfaces/doctor.interface";
+
+const normalizeSchedule = (
+  schedule?: IDoctorSchedule[] | IDoctorSchedule | string
+) => {
+  let parsedSchedule: IDoctorSchedule[] = [];
+
+  // Handle form-data/string payloads from frontend (e.g. JSON string).
+  if (typeof schedule === "string") {
+    try {
+      const parsed = JSON.parse(schedule);
+      if (Array.isArray(parsed)) {
+        parsedSchedule = parsed;
+      } else if (parsed && typeof parsed === "object") {
+        parsedSchedule = [parsed as IDoctorSchedule];
+      } else {
+        return [];
+      }
+    } catch {
+      return [];
+    }
+  } else if (Array.isArray(schedule)) {
+    parsedSchedule = schedule;
+  } else if (schedule && typeof schedule === "object") {
+    // Handle single object payloads.
+    parsedSchedule = [schedule];
+  } else {
+    return [];
+  }
+
+  return parsedSchedule
+    .map((item) => ({
+      day: item?.day?.trim() || undefined,
+      time: item?.time?.trim() || undefined,
+      chamber: item?.chamber?.trim() || undefined,
+    }))
+    .filter((item) => item.day || item.time || item.chamber);
+};
 
 export const createDoctor = async (
   req: AuthenticatedRequest,
@@ -25,6 +63,8 @@ export const createDoctor = async (
     }
 
     const creatorName = user.name;
+    const normalizedSchedule = normalizeSchedule(schedule);
+
     const newDoctor = await DoctorModel.create({
       name,
       specialty,
@@ -32,7 +72,7 @@ export const createDoctor = async (
       location,
       phone,
       email,
-      schedule,
+      schedule: normalizedSchedule,
       image: null,
       createdBy,
       creatorName,
@@ -55,6 +95,9 @@ export const createDoctor = async (
     });
   } catch (error: any) {
     console.error("Create Doctor Error:", error);
+    if (error?.name === "ValidationError" || error?.message?.includes("schedule item")) {
+      return res.status(400).json({ message: error.message });
+    }
     res
       .status(500)
       .json({ message: "Failed to create doctor", error: error.message });
@@ -101,7 +144,11 @@ export const updateDoctor = async (req: AuthenticatedRequest, res: Response) => 
     ];
     fieldsToUpdate.forEach((field) => {
       if (updateData[field] !== undefined) {
-        (doctor as any)[field] = updateData[field];
+        if (field === "schedule") {
+          (doctor as any)[field] = normalizeSchedule(updateData.schedule);
+        } else {
+          (doctor as any)[field] = updateData[field];
+        }
       }
     });
 
@@ -124,6 +171,9 @@ export const updateDoctor = async (req: AuthenticatedRequest, res: Response) => 
     });
   } catch (error: any) {
     console.error("Update Doctor Error:", error);
+    if (error?.name === "ValidationError" || error?.message?.includes("schedule item")) {
+      return res.status(400).json({ message: error.message });
+    }
     res
       .status(500)
       .json({ message: "Failed to update doctor", error: error.message });

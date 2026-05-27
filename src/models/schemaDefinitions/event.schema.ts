@@ -6,7 +6,7 @@ import { GENERAL_SCHEMA_OPTIONS } from "../../constants/model/schemaOption";
 const eventSchema = new Schema<IEvent>(
     {
         title: SCHEMA_DEFINATION_PROPERTIES.requiredString,
-        description: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+        description: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
         date: SCHEMA_DEFINATION_PROPERTIES.requiredDate,
         time: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         location: SCHEMA_DEFINATION_PROPERTIES.requiredString,

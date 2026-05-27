@@ -1,7 +1,7 @@
 export interface IDoctorSchedule {
-    day: string;
-    time: string;
-    chamber: string;
+    day?: string;
+    time?: string;
+    chamber?: string;
 }
 
 export interface IDoctor {
@@ -12,7 +12,7 @@ export interface IDoctor {
     phone: string;
     email?: string | null;
     image?: string | null;
-    schedule: IDoctorSchedule[];
+    schedule?: IDoctorSchedule[];
     createdBy: string;
     creatorName: string;
     createdAt?: Date;

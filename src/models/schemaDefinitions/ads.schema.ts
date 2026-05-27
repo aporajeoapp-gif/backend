@@ -6,11 +6,11 @@ import { GENERAL_SCHEMA_OPTIONS } from "../../constants/model/schemaOption";
 const adsSchema = new Schema<IAdvertisement>(
     {
         title: SCHEMA_DEFINATION_PROPERTIES.requiredString,
-        description: SCHEMA_DEFINATION_PROPERTIES.requiredString,
-        image: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+        description: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
+        image: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
         link: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
-        tag: SCHEMA_DEFINATION_PROPERTIES.requiredString,
-        cta: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+        tag: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
+        cta: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
         startDate: SCHEMA_DEFINATION_PROPERTIES.requiredDate,
         endDate: SCHEMA_DEFINATION_PROPERTIES.requiredDate,
         status: {
