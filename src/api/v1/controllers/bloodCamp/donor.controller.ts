@@ -142,9 +142,44 @@ export const approveDonor = async (req: AuthenticatedRequest, res: Response) => 
 export const getCampDonors = async (req: Request, res: Response) => {
   try {
     const { campId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = req.query.search as string;
+    const sortBy = (req.query.sortBy as string) || 'createdAt';
+    const sortOrder = (req.query.sortOrder as string) === 'asc' ? 1 : -1;
+    const status = req.query.status as string;
 
-    const donors = await DonorModel.find({ campId }).sort({ createdAt: -1 });
-    res.status(200).json(donors);
+    let query: any = { campId };
+    
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { bloodGroup: { $regex: search, $options: "i" } },
+        { phone: { $regex: search, $options: "i" } }
+      ];
+    }
+    
+    if (status) {
+      query.status = status;
+    }
+
+    const skip = (page - 1) * limit;
+    
+    const total = await DonorModel.countDocuments(query);
+    const donors = await DonorModel.find(query)
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      data: donors,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error: any) {
     console.error("Get Camp Donors Error:", error);
     res.status(500).json({ message: "Failed to fetch donors", error: error.message });

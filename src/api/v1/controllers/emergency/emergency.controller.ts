@@ -61,10 +61,38 @@ export const createEmergencyService = async (
 
 export const getEmergencyServices = async (req: Request, res: Response) => {
   try {
-    const emergencyServices = await EmergencyModel.find().sort({
-      createdAt: -1,
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = req.query.search as string;
+    const sortBy = (req.query.sortBy as string) || 'createdAt';
+    const sortOrder = (req.query.sortOrder as string) === 'asc' ? 1 : -1;
+
+    let query: any = {};
+    if (search) {
+      query.$or = [
+        { serviceName: { $regex: search, $options: "i" } },
+        { category: { $regex: search, $options: "i" } },
+        { address: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const total = await EmergencyModel.countDocuments(query);
+    const emergencyServices = await EmergencyModel.find(query)
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      data: emergencyServices,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
     });
-    res.status(200).json(emergencyServices);
   } catch (error: any) {
     console.error("Get Emergency Services Error:", error);
     res

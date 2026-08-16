@@ -4,10 +4,20 @@ import DonorModel from "../../../../models/donor.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import { uploadToS3, deleteFromS3 } from "../../../../utils/s3.utils";
 import { createAuditLogFromRequest } from "../../../../utils/logger";
+import { resolveBloodCampStatus } from "../../../../utils/status.utils";
+
+const normalizeCampStatus = async (camp: any) => {
+  const resolvedStatus = resolveBloodCampStatus(camp.date);
+  if (resolvedStatus !== camp.status) {
+    camp.status = resolvedStatus;
+    await camp.save();
+  }
+  return camp;
+};
 
 export const createBloodCamp = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { campName, organizer, date, time, location, address, city, bloodGroupsNeeded, contactPhone, contactEmail, description, status, targetUnits, collectedUnits } = req.body;
+    const { campName, organizer, date, time, location, address, city, bloodGroupsNeeded, contactPhone, contactEmail, description, targetUnits, collectedUnits } = req.body;
 
     let banner_image = null;
     let organizationLogo = null;
@@ -50,7 +60,7 @@ export const createBloodCamp = async (req: AuthenticatedRequest, res: Response) 
       contactPhone,
       contactEmail,
       description,
-      status: status || "upcoming", 
+      status: resolveBloodCampStatus(date),
       targetUnits,
       collectedUnits,
       createdBy: req.user?.userId,
@@ -79,41 +89,48 @@ export const createBloodCamp = async (req: AuthenticatedRequest, res: Response) 
 
 export const getBloodCamps = async (req: Request, res: Response) => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = req.query.search as string;
+    const status = req.query.status as string;
+    const sortBy = (req.query.sortBy as string) || 'date';
+    const sortOrder = (req.query.sortOrder as string) === 'desc' ? -1 : 1;
+
     const query: any = {};
-    // If no authorization header, only show published camps (Public View)
     if (!req.headers.authorization) {
       query.isPublished = true;
     }
     
-    const camps = await BloodCampModel.find(query).sort({ date: 1 });
+    if (search) {
+      query.$or = [
+        { campName: { $regex: search, $options: "i" } },
+        { location: { $regex: search, $options: "i" } },
+        { city: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const camps = await BloodCampModel.find(query)
+      .sort({ [sortBy]: sortOrder })
+      .exec();
+
+    const normalized = await Promise.all(camps.map((camp) => normalizeCampStatus(camp)));
+    const filtered = status
+      ? normalized.filter((camp) => camp.status === status)
+      : normalized;
+
+    const total = filtered.length;
+    const skip = (page - 1) * limit;
+    const result = filtered.slice(skip, skip + limit);
     
-    // Auto update status logic based on date
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0];
-
-    const updatedCampsPromises = camps.map(async (camp) => {
-      let newStatus = camp.status;
-      const campDateStr = new Date(camp.date).toISOString().split('T')[0];
-
-      if (campDateStr < todayStr) {
-        newStatus = 'completed';
-      } else if (campDateStr === todayStr) {
-        newStatus = 'ongoing';
+    res.status(200).json({
+      data: result,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
       }
-      // If it's in the future and status isn't manually changed from upcoming, stay upcoming
-      // But user says: "bydefault will be upcoming... after complete auto update completed"
-      // So we mainly care about auto-transitioning to ongoing/completed.
-
-      if (newStatus !== camp.status) {
-        camp.status = newStatus as any;
-        await camp.save();
-      }
-      return camp;
     });
-
-    const result = await Promise.all(updatedCampsPromises);
-    res.status(200).json(result);
   } catch (error: any) {
     console.error("Get Blood Camps Error:", error);
     res.status(500).json({ message: "Failed to fetch blood camps", error: error.message });
@@ -127,6 +144,8 @@ export const getBloodCampById = async (req: Request, res: Response) => {
     if (!camp) {
       return res.status(404).json({ message: "Blood Donation Camp not found" });
     }
+
+    await normalizeCampStatus(camp);
 
     // Fetch approved donors for this camp to show in public preview if published
     let donors: any[] = [];
@@ -188,6 +207,10 @@ export const updateBloodCamp = async (req: AuthenticatedRequest, res: Response) 
 
     if (updateData.bloodGroupsNeeded && typeof updateData.bloodGroupsNeeded === 'string') {
       updateData.bloodGroupsNeeded = JSON.parse(updateData.bloodGroupsNeeded);
+    }
+
+    if (updateData.date) {
+      updateData.status = resolveBloodCampStatus(updateData.date);
     }
 
     const updatedCamp = await BloodCampModel.findByIdAndUpdate(id, updateData, { new: true });
@@ -252,5 +275,3 @@ export const deleteBloodCamp = async (req: AuthenticatedRequest, res: Response) 
     res.status(500).json({ message: "Failed to delete blood camp", error: error.message });
   }
 };
-
-

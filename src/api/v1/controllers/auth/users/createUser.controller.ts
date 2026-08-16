@@ -118,18 +118,52 @@ export const createUser = async (req: AuthenticatedRequest, res: Response) => {
 
 export const getAllUsers = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const query = { role: { $ne: "super_admin" } };
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = req.query.search as string;
+    const sortBy = (req.query.sortBy as string) || 'createdAt';
+    const sortOrder = (req.query.sortOrder as string) === 'asc' ? 1 : -1;
+    const role = req.query.role as string;
+    const status = req.query.status as string;
+
+    const query: any = { role: { $ne: "super_admin" } };
     
-    const users = await UserModel.find(query).sort({ createdAt: -1 });
+    if (role) query.role = role;
+    if (status) query.status = status;
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { phno: { $regex: search, $options: "i" } }
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const total = await UserModel.countDocuments(query);
+    const users = await UserModel.find(query)
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit);
+
     const result = users.map((user) => {
       const decrypted = decryptPassword(user.password || "");
       return {
         ...user.toObject(),
-        password: decrypted || user.password, // Fallback to raw string if decryption fails
+        password: decrypted || user.password,
       };
     });
 
-    res.status(200).json(result);
+    res.status(200).json({
+      data: result,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error: any) {
     console.error("Get Users Error:", error);
     res

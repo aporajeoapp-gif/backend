@@ -106,8 +106,38 @@ export const createDoctor = async (
 
 export const getDoctors = async (req: Request, res: Response) => {
   try {
-    const doctors = await DoctorModel.find().sort({ createdAt: -1 });
-    res.status(200).json(doctors);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = req.query.search as string;
+    const sortBy = (req.query.sortBy as string) || 'createdAt';
+    const sortOrder = (req.query.sortOrder as string) === 'asc' ? 1 : -1;
+
+    let query: any = {};
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { specialty: { $regex: search, $options: "i" } },
+        { location: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const total = await DoctorModel.countDocuments(query);
+    const doctors = await DoctorModel.find(query)
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      data: doctors,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error: any) {
     console.error("Get Doctors Error:", error);
     res

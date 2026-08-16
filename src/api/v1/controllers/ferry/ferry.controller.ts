@@ -50,8 +50,37 @@ export const createFerry = async (req: AuthenticatedRequest, res: Response) => {
 
 export const getFerries = async (req: Request, res: Response) => {
   try {
-    const ferries = await FerryModel.find().sort({ createdAt: -1 });
-    res.status(200).json(ferries);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = req.query.search as string;
+    const sortBy = (req.query.sortBy as string) || 'createdAt';
+    const sortOrder = (req.query.sortOrder as string) === 'asc' ? 1 : -1;
+
+    let query: any = {};
+    if (search) {
+      query.$or = [
+        { ferryName: { $regex: search, $options: "i" } },
+        { routeName: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const total = await FerryModel.countDocuments(query);
+    const ferries = await FerryModel.find(query)
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      data: ferries,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error: any) {
     console.error("Get Ferries Error:", error);
     res.status(500).json({ message: "Failed to fetch ferry routes", error: error.message });

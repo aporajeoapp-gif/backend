@@ -3,10 +3,20 @@ import AdsModel from "../../../../models/ads.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import { uploadToS3, deleteFromS3 } from "../../../../utils/s3.utils";
 import { createAuditLogFromRequest } from "../../../../utils/logger";
+import { resolveAdStatus } from "../../../../utils/status.utils";
+
+const normalizeAdStatus = async (ad: any) => {
+  const resolvedStatus = resolveAdStatus(ad.startDate, ad.endDate);
+  if (resolvedStatus !== ad.status) {
+    ad.status = resolvedStatus;
+    await ad.save();
+  }
+  return ad;
+};
 
 export const createAd = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { title, description, link, tag, cta, startDate, endDate, status } = req.body;
+    const { title, description, link, tag, cta, startDate, endDate } = req.body;
     const createdBy = req.user?.userId;
 
     if (!createdBy) {
@@ -37,7 +47,7 @@ export const createAd = async (req: AuthenticatedRequest, res: Response) => {
       cta,
       startDate,
       endDate,
-      status,
+      status: resolveAdStatus(startDate, endDate),
       createdBy: createdBy.toString(),
     });
 
@@ -61,20 +71,55 @@ export const createAd = async (req: AuthenticatedRequest, res: Response) => {
 
 export const getAds = async (req: Request, res: Response) => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = req.query.search as string;
+    const sortBy = (req.query.sortBy as string) || 'createdAt';
+    const sortOrder = (req.query.sortOrder as string) === 'asc' ? 1 : -1;
     const { status } = req.query;
+
     const filter: any = {};
     if (status) {
       filter.status = status;
     }
-
-    // If public request (no auth), exclude expired ads
-    if (!req.headers.authorization) {
-      if (filter.status === "expired") return res.status(200).json([]);
-      if (!filter.status) filter.status = { $ne: "expired" };
+    
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { tag: { $regex: search, $options: "i" } }
+      ];
     }
 
-    const ads = await AdsModel.find(filter).sort({ createdAt: -1 });
-    res.status(200).json(ads);
+    // If public request (no auth), only expose currently active ads
+    if (!req.headers.authorization) {
+      if (filter.status && filter.status !== "active") {
+        return res.status(200).json({
+          data: [],
+          pagination: { total: 0, page, limit, totalPages: 0 }
+        });
+      }
+      filter.status = "active";
+    }
+
+    const skip = (page - 1) * limit;
+    
+    const total = await AdsModel.countDocuments(filter);
+    const ads = await AdsModel.find(filter)
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit);
+
+    const normalizedAds = await Promise.all(ads.map((ad) => normalizeAdStatus(ad)));
+
+    res.status(200).json({
+      data: normalizedAds,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error: any) {
     console.error("Get Ads Error:", error);
     res.status(500).json({ message: "Failed to fetch advertisements", error: error.message });
@@ -104,6 +149,15 @@ export const updateAd = async (req: AuthenticatedRequest, res: Response) => {
         req.file.mimetype
       );
       updateData.image = uploadResult.secure_url;
+    }
+
+    if (updateData.startDate || updateData.endDate) {
+      updateData.status = resolveAdStatus(updateData.startDate ?? ad.startDate, updateData.endDate ?? ad.endDate);
+    } else if (updateData.status) {
+      // Keep manual toggles only when no date change is involved.
+      updateData.status = updateData.status;
+    } else {
+      updateData.status = resolveAdStatus(ad.startDate, ad.endDate);
     }
 
     const updatedAd = await AdsModel.findByIdAndUpdate(id, updateData, { new: true });
@@ -158,4 +212,3 @@ export const deleteAd = async (req: AuthenticatedRequest, res: Response) => {
     res.status(500).json({ message: "Failed to delete advertisement", error: error.message });
   }
 };
-

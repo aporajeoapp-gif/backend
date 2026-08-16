@@ -4,9 +4,78 @@ import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import UserModel from "../../../../models/user.model";
 import { createAuditLogFromRequest } from "../../../../utils/logger";
 
+const normalizeIntermediateStops = (intermediateStops: any, stops: any) => {
+  const parsedStops = Array.isArray(intermediateStops)
+    ? intermediateStops
+    : typeof intermediateStops === "string"
+      ? (() => {
+          try {
+            const parsed = JSON.parse(intermediateStops);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        })()
+      : [];
+
+  const cleanedStops = parsedStops
+    .map((stop: any) => ({
+      stopName: String(stop?.stopName || stop?.name || "").trim(),
+      time: String(stop?.time || "").trim(),
+    }))
+    .filter((stop: any) => stop.stopName);
+
+  if (cleanedStops.length > 0) {
+    return cleanedStops;
+  }
+
+  if (Array.isArray(stops)) {
+    return stops
+      .map((stop: any) => String(stop || "").trim())
+      .filter(Boolean)
+      .map((stopName: string) => ({ stopName, time: "" }));
+  }
+
+  if (typeof stops === "string" && stops.trim()) {
+    return stops
+      .split(",")
+      .map((stop: string) => stop.trim())
+      .filter(Boolean)
+      .map((stopName: string) => ({ stopName, time: "" }));
+  }
+
+  return [];
+};
+
+const buildTimings = (departureStopageTime: string | undefined, arrivalStopageTime: string | undefined, timings: any) => {
+  if (Array.isArray(timings) && timings.length > 0) {
+    return timings;
+  }
+
+  if (departureStopageTime || arrivalStopageTime) {
+    return [
+      {
+        departure: departureStopageTime || "",
+        arrival: arrivalStopageTime || "",
+      },
+    ];
+  }
+
+  return [];
+};
+
 export const createBus = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { busName, routeName, stops, timings, fare } =
+    const {
+      busName,
+      routeName,
+      stops,
+      timings,
+      fare,
+      departureStopageTime,
+      arrivalStopageTime,
+      intermediateStops,
+    } =
       req.body;
     const createdBy = req.user?.userId;
 
@@ -21,11 +90,16 @@ export const createBus = async (req: AuthenticatedRequest, res: Response) => {
     }
 
     const creatorName = user.name;
+    const normalizedIntermediateStops = normalizeIntermediateStops(intermediateStops, stops);
+    const normalizedTimings = buildTimings(departureStopageTime, arrivalStopageTime, timings);
     const newBus = await BusModel.create({
       busName,
       routeName,
-      stops,
-      timings,
+      stops: normalizedIntermediateStops.map((stop) => stop.stopName),
+      timings: normalizedTimings,
+      departureStopageTime: departureStopageTime || null,
+      arrivalStopageTime: arrivalStopageTime || null,
+      intermediateStops: normalizedIntermediateStops,
       fare,
       createdBy,
       creatorName,
@@ -54,8 +128,41 @@ export const createBus = async (req: AuthenticatedRequest, res: Response) => {
 
 export const getBuses = async (req: Request, res: Response) => {
   try {
-    const buses = await BusModel.find().sort({ createdAt: -1 });
-    res.status(200).json(buses);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = req.query.search as string;
+    const sortBy = (req.query.sortBy as string) || 'createdAt';
+    const sortOrder = (req.query.sortOrder as string) === 'asc' ? 1 : -1;
+
+    let query: any = {};
+    if (search) {
+      query.$or = [
+        { busName: { $regex: search, $options: "i" } },
+        { routeName: { $regex: search, $options: "i" } },
+        { stops: { $regex: search, $options: "i" } },
+        { "intermediateStops.stopName": { $regex: search, $options: "i" } },
+        { departureStopageTime: { $regex: search, $options: "i" } },
+        { arrivalStopageTime: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const total = await BusModel.countDocuments(query);
+    const buses = await BusModel.find(query)
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      data: buses,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error: any) {
     console.error("Get Buses Error:", error);
     res
@@ -83,9 +190,24 @@ export const updateBus = async (req: AuthenticatedRequest, res: Response) => {
       "routeName",
       "stops",
       "timings",
+      "departureStopageTime",
+      "arrivalStopageTime",
+      "intermediateStops",
       "fare",
     ];
     const oldData = bus.toObject();
+
+    const normalizedIntermediateStops = normalizeIntermediateStops(updateData.intermediateStops, updateData.stops);
+    const normalizedTimings = buildTimings(updateData.departureStopageTime, updateData.arrivalStopageTime, updateData.timings);
+
+    if (normalizedIntermediateStops.length > 0) {
+      updateData.intermediateStops = normalizedIntermediateStops;
+      updateData.stops = normalizedIntermediateStops.map((stop: any) => stop.stopName);
+    }
+
+    if (normalizedTimings.length > 0) {
+      updateData.timings = normalizedTimings;
+    }
 
     fieldsToUpdate.forEach((field) => {
       if (updateData[field] !== undefined) {

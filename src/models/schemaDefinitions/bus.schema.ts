@@ -26,6 +26,17 @@ const busSchema = new Schema<IBusRoute>(
       required: true,
       default: [],
     },
+    departureStopageTime: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
+    arrivalStopageTime: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
+    intermediateStops: {
+      type: [
+        {
+          stopName: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+          time: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+        },
+      ],
+      default: [],
+    },
     fare: SCHEMA_DEFINATION_PROPERTIES.requiredNumber,
     createdBy: SCHEMA_DEFINATION_PROPERTIES.requiredString,
     creatorName: SCHEMA_DEFINATION_PROPERTIES.requiredString,

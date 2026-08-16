@@ -3,10 +3,20 @@ import EventModel from "../../../../models/event.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import { uploadToS3, deleteFromS3 } from "../../../../utils/s3.utils";
 import { createAuditLogFromRequest } from "../../../../utils/logger";
+import { resolveEventStatus } from "../../../../utils/status.utils";
+
+const normalizeEventStatus = async (event: any) => {
+  const resolvedStatus = resolveEventStatus(event.date);
+  if (resolvedStatus !== event.status) {
+    event.status = resolvedStatus;
+    await event.save();
+  }
+  return event;
+};
 
 export const createEvent = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { title, description, date, time, location, organizer, category, status } = req.body;
+    const { title, description, date, time, location, organizer, category } = req.body;
     const createdBy = req.user?.userId;
 
     if (!createdBy) {
@@ -33,7 +43,7 @@ export const createEvent = async (req: AuthenticatedRequest, res: Response) => {
       organizer,
       category,
       image,
-      status,
+      status: resolveEventStatus(date),
       createdBy: createdBy.toString(),
     });
 
@@ -57,8 +67,39 @@ export const createEvent = async (req: AuthenticatedRequest, res: Response) => {
 
 export const getEvents = async (req: Request, res: Response) => {
   try {
-    const events = await EventModel.find().sort({ date: -1 });
-    res.status(200).json(events);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = req.query.search as string;
+    const sortBy = (req.query.sortBy as string) || 'date';
+    const sortOrder = (req.query.sortOrder as string) === 'asc' ? 1 : -1;
+
+    let query: any = {};
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { location: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const total = await EventModel.countDocuments(query);
+    const events = await EventModel.find(query)
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit);
+
+    const normalizedEvents = await Promise.all(events.map((event) => normalizeEventStatus(event)));
+
+    res.status(200).json({
+      data: normalizedEvents,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error: any) {
     console.error("Get Events Error:", error);
     res.status(500).json({ message: "Failed to fetch events", error: error.message });
@@ -88,6 +129,10 @@ export const updateEvent = async (req: AuthenticatedRequest, res: Response) => {
         req.file.mimetype
       );
       updateData.image = uploadResult.secure_url;
+    }
+
+    if (updateData.date) {
+      updateData.status = resolveEventStatus(updateData.date);
     }
 
     const updatedEvent = await EventModel.findByIdAndUpdate(id, updateData, { new: true });
@@ -146,7 +191,8 @@ export const deleteEvent = async (req: AuthenticatedRequest, res: Response) => {
 export const getLatestEvents = async (req: Request, res: Response) => {
   try {
     const events = await EventModel.find().sort({ createdAt: -1 }).limit(5);
-    res.status(200).json(events);
+    const normalizedEvents = await Promise.all(events.map((event) => normalizeEventStatus(event)));
+    res.status(200).json(normalizedEvents);
   } catch (error: any) {
     console.error("Get Latest Events Error:", error);
     res.status(500).json({ message: "Failed to fetch latest events", error: error.message });
