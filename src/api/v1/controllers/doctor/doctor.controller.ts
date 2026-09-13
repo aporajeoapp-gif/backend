@@ -42,14 +42,46 @@ const normalizeSchedule = (
     .filter((item) => item.day || item.time || item.chamber);
 };
 
+const normalizePhone = (value: unknown) => {
+  const phone = String(value ?? "").trim();
+  return phone || null;
+};
+
+const normalizeLocation = (value: any) => {
+  if (!value || typeof value !== "object") return null;
+
+  const address = String(value.address ?? "").trim();
+  const latitude = Number(value.latitude);
+  const longitude = Number(value.longitude);
+
+  return {
+    address: address || null,
+    latitude: Number.isFinite(latitude) ? latitude : null,
+    longitude: Number.isFinite(longitude) ? longitude : null,
+  };
+};
+
 export const createDoctor = async (
   req: AuthenticatedRequest,
   res: Response,
 ) => {
   try {
-    const { name, specialty, personalNo, location, phone, email, schedule } =
-      req.body;
-
+    const {
+      name,
+      specialty,
+      personalNo,
+      location,
+      phone,
+      alternatePhone: alternatePhoneValue,
+      degree,
+      experience,
+      medicalShopLocation,
+      email,
+      schedule,
+    } = req.body;
+    const alternatePhone = normalizePhone(
+      alternatePhoneValue ?? req.body.alternatePhNo ?? req.body.alternatePhoneNo,
+    );
     const createdBy = req.user?.userId;
 
     if (!createdBy) {
@@ -71,6 +103,10 @@ export const createDoctor = async (
       personalNo,
       location,
       phone,
+      alternatePhone,
+      degree: String(degree ?? "").trim() || null,
+      experience: experience === "" || experience === undefined || experience === null ? null : Number(experience),
+      medicalShopLocation: normalizeLocation(medicalShopLocation),
       email,
       schedule: normalizedSchedule,
       image: null,
@@ -150,7 +186,13 @@ export const updateDoctor = async (req: AuthenticatedRequest, res: Response) => 
   try {
     const { id } = req.params;
     const updateData = req.body;
-
+    if (updateData.alternatePhone === undefined) {
+      updateData.alternatePhone =
+        updateData.alternatePhNo ?? updateData.alternatePhoneNo;
+    }
+    if (updateData.medicalShopLocation !== undefined) {
+      updateData.medicalShopLocation = normalizeLocation(updateData.medicalShopLocation);
+    }
     if (!id) {
       return res.status(400).json({ message: "Missing required fields: id" });
     }
@@ -168,16 +210,30 @@ export const updateDoctor = async (req: AuthenticatedRequest, res: Response) => 
       "personalNo",
       "location",
       "phone",
+      "alternatePhone",
+      "degree",
+      "experience",
+      "medicalShopLocation",
       "email",
       "schedule",
       "image",
     ];
+    
     fieldsToUpdate.forEach((field) => {
       if (updateData[field] !== undefined) {
         if (field === "schedule") {
           (doctor as any)[field] = normalizeSchedule(updateData.schedule);
         } else {
-          (doctor as any)[field] = updateData[field];
+          (doctor as any)[field] =
+            field === "alternatePhone"
+              ? normalizePhone(updateData[field])
+              : field === "degree"
+                ? String(updateData[field] ?? "").trim() || null
+                : field === "experience"
+                  ? updateData[field] === "" || updateData[field] === null
+                    ? null
+                    : Number(updateData[field])
+              : updateData[field];
         }
       }
     });
@@ -245,4 +301,3 @@ export const deleteDoctor = async (req: AuthenticatedRequest, res: Response) => 
       .json({ message: "Failed to delete doctor", error: error.message });
   }
 };
-

@@ -30,6 +30,14 @@ const doctorSchema = new Schema<IDoctor>(
     personalNo: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
     location: SCHEMA_DEFINATION_PROPERTIES.requiredString,
     phone: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+    alternatePhone: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
+    degree: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
+    experience: SCHEMA_DEFINATION_PROPERTIES.optionalNullNumber,
+    medicalShopLocation: {
+      address: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
+      latitude: SCHEMA_DEFINATION_PROPERTIES.optionalNullNumber,
+      longitude: SCHEMA_DEFINATION_PROPERTIES.optionalNullNumber,
+    },
     email: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
     image: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
 

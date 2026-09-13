@@ -5,7 +5,7 @@ export interface IEvent {
     title: string;
     description?: string;
     date: Date;
-    time: string;
+    time?: string | null;
     location: string;
     organizer: string;
     category: string;

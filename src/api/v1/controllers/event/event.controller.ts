@@ -14,6 +14,11 @@ const normalizeEventStatus = async (event: any) => {
   return event;
 };
 
+const normalizeOptionalString = (value: unknown) => {
+  const text = String(value ?? "").trim();
+  return text || null;
+};
+
 export const createEvent = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { title, description, date, time, location, organizer, category } = req.body;
@@ -38,7 +43,7 @@ export const createEvent = async (req: AuthenticatedRequest, res: Response) => {
       title,
       description,
       date,
-      time,
+      time: normalizeOptionalString(time),
       location,
       organizer,
       category,
@@ -133,6 +138,9 @@ export const updateEvent = async (req: AuthenticatedRequest, res: Response) => {
 
     if (updateData.date) {
       updateData.status = resolveEventStatus(updateData.date);
+    }
+    if (updateData.time !== undefined) {
+      updateData.time = normalizeOptionalString(updateData.time);
     }
 
     const updatedEvent = await EventModel.findByIdAndUpdate(id, updateData, { new: true });

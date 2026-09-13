@@ -4,6 +4,11 @@ import UserModel from "../../../../models/user.model";
 import EmergencyModel from "../../../../models/emergency.model";
 import { createAuditLogFromRequest } from "../../../../utils/logger";
 
+const normalizeOptionalString = (value: unknown) => {
+  const text = String(value ?? "").trim();
+  return text || null;
+};
+
 export const createEmergencyService = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -26,7 +31,7 @@ export const createEmergencyService = async (
     const newEmergencyService = await EmergencyModel.create({
       serviceName,
       category,
-      address,
+      address: normalizeOptionalString(address),
       contactPhone,
       location,
       createdBy,
@@ -132,7 +137,10 @@ export const updateEmergencyService = async (
     ];
     fieldsToUpdate.forEach((field) => {
       if (updateData[field] !== undefined) {
-        (emergencyService as any)[field] = updateData[field];
+        (emergencyService as any)[field] =
+          field === "address"
+            ? normalizeOptionalString(updateData[field])
+            : updateData[field];
       }
     });
 

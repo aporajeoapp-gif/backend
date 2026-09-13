@@ -12,7 +12,7 @@ const emergencySchema = new Schema<IEmergencyService>(
             trim: true,
             enum: ["Ambulance", "Fire", "Police", "Hospital", "Other"]
         },
-        address: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+        address: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
         contactPhone: {
             type: [String],
             required: true,

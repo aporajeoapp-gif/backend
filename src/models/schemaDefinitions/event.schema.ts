@@ -8,7 +8,7 @@ const eventSchema = new Schema<IEvent>(
         title: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         description: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
         date: SCHEMA_DEFINATION_PROPERTIES.requiredDate,
-        time: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+        time: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
         location: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         organizer: SCHEMA_DEFINATION_PROPERTIES.requiredString,
         category: SCHEMA_DEFINATION_PROPERTIES.requiredString,
