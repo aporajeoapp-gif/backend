@@ -16,7 +16,7 @@ const ferrySchema = new Schema<IFerryRoute>(
     },
     stops: {
       type: [String],
-      required: true,
+      required: false,
       default: [],
     },
     timings: {
@@ -29,7 +29,7 @@ const ferrySchema = new Schema<IFerryRoute>(
       required: true,
       default: [],
     },
-    fare: SCHEMA_DEFINATION_PROPERTIES.requiredNumber,
+    fare: SCHEMA_DEFINATION_PROPERTIES.optionalNullNumber,
     createdBy: SCHEMA_DEFINATION_PROPERTIES.requiredString,
     creatorName: SCHEMA_DEFINATION_PROPERTIES.requiredString,
   },
@@ -37,3 +37,5 @@ const ferrySchema = new Schema<IFerryRoute>(
 );
 
 export default ferrySchema;
+
+

@@ -3,12 +3,17 @@ import AdsModel from "../../../../models/ads.model";
 import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import { uploadToS3, deleteFromS3 } from "../../../../utils/s3.utils";
 import { createAuditLogFromRequest } from "../../../../utils/logger";
-import { resolveAdStatus } from "../../../../utils/status.utils";
+import { getDateKey, resolveAdStatus } from "../../../../utils/status.utils";
+
+const isAdDateExpired = (endDate: string | Date | undefined | null) => {
+  const end = getDateKey(endDate);
+  const today = getDateKey(new Date());
+  return Boolean(end && today > end);
+};
 
 const normalizeAdStatus = async (ad: any) => {
-  const resolvedStatus = resolveAdStatus(ad.startDate, ad.endDate);
-  if (resolvedStatus !== ad.status) {
-    ad.status = resolvedStatus;
+  if (isAdDateExpired(ad.endDate) && ad.status !== "expired") {
+    ad.status = "expired";
     await ad.save();
   }
   return ad;
@@ -76,13 +81,16 @@ export const getAds = async (req: Request, res: Response) => {
     const search = req.query.search as string;
     const sortBy = (req.query.sortBy as string) || 'createdAt';
     const sortOrder = (req.query.sortOrder as string) === 'asc' ? 1 : -1;
-    const { status } = req.query;
+    const requestedStatus = typeof req.query.status === "string" ? req.query.status : "";
+
+    if (!req.headers.authorization && requestedStatus && requestedStatus !== "active") {
+      return res.status(200).json({
+        data: [],
+        pagination: { total: 0, page, limit, totalPages: 0 }
+      });
+    }
 
     const filter: any = {};
-    if (status) {
-      filter.status = status;
-    }
-    
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: "i" } },
@@ -90,34 +98,22 @@ export const getAds = async (req: Request, res: Response) => {
       ];
     }
 
-    // If public request (no auth), only expose currently active ads
-    if (!req.headers.authorization) {
-      if (filter.status && filter.status !== "active") {
-        return res.status(200).json({
-          data: [],
-          pagination: { total: 0, page, limit, totalPages: 0 }
-        });
-      }
-      filter.status = "active";
-    }
-
-    const skip = (page - 1) * limit;
-    
-    const total = await AdsModel.countDocuments(filter);
-    const ads = await AdsModel.find(filter)
-      .sort({ [sortBy]: sortOrder })
-      .skip(skip)
-      .limit(limit);
-
+    const ads = await AdsModel.find(filter).sort({ [sortBy]: sortOrder });
     const normalizedAds = await Promise.all(ads.map((ad) => normalizeAdStatus(ad)));
+    const effectiveStatus = !req.headers.authorization ? "active" : requestedStatus;
+    const visibleAds = effectiveStatus
+      ? normalizedAds.filter((ad) => ad.status === effectiveStatus)
+      : normalizedAds;
+    const skip = (page - 1) * limit;
+    const paginatedAds = visibleAds.slice(skip, skip + limit);
 
     res.status(200).json({
-      data: normalizedAds,
+      data: paginatedAds,
       pagination: {
-        total,
+        total: visibleAds.length,
         page,
         limit,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(visibleAds.length / limit)
       }
     });
   } catch (error: any) {
@@ -125,7 +121,6 @@ export const getAds = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to fetch advertisements", error: error.message });
   }
 };
-
 export const updateAd = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -151,14 +146,11 @@ export const updateAd = async (req: AuthenticatedRequest, res: Response) => {
       updateData.image = uploadResult.secure_url;
     }
 
-    if (updateData.startDate || updateData.endDate) {
-      updateData.status = resolveAdStatus(updateData.startDate ?? ad.startDate, updateData.endDate ?? ad.endDate);
-    } else if (updateData.status) {
-      // Keep manual toggles only when no date change is involved.
-      updateData.status = updateData.status;
-    } else {
-      updateData.status = resolveAdStatus(ad.startDate, ad.endDate);
-    }
+    const nextStartDate = updateData.startDate ?? ad.startDate;
+    const nextEndDate = updateData.endDate ?? ad.endDate;
+    updateData.status = isAdDateExpired(nextEndDate)
+      ? "expired"
+      : updateData.status || resolveAdStatus(nextStartDate, nextEndDate);
 
     const updatedAd = await AdsModel.findByIdAndUpdate(id, updateData, { new: true });
 
@@ -212,3 +204,5 @@ export const deleteAd = async (req: AuthenticatedRequest, res: Response) => {
     res.status(500).json({ message: "Failed to delete advertisement", error: error.message });
   }
 };
+
+

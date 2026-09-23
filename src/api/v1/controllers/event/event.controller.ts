@@ -75,14 +75,20 @@ export const getEvents = async (req: Request, res: Response) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const search = req.query.search as string;
+    const category = req.query.category as string;
     const sortBy = (req.query.sortBy as string) || 'date';
     const sortOrder = (req.query.sortOrder as string) === 'asc' ? 1 : -1;
 
     let query: any = {};
+    if (category) {
+      query.category = category;
+    }
+
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: "i" } },
         { location: { $regex: search, $options: "i" } },
+        { category: { $regex: search, $options: "i" } },
       ];
     }
 
@@ -206,3 +212,4 @@ export const getLatestEvents = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to fetch latest events", error: error.message });
   }
 };
+

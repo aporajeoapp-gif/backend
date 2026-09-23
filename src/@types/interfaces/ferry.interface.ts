@@ -4,11 +4,13 @@ export interface IFerryRoute {
   // startPoint: string;
   // endPoint: string;
   routeName: string[];
-  stops: string[];
+  stops?: string[];
   timings: { departure: string; arrival: string }[];
-  fare: number;
+  fare?: number | null;
   createdBy: string;
   creatorName: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+

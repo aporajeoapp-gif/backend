@@ -13,7 +13,7 @@ const busSchema = new Schema<IBusRoute>(
     },
     stops: {
       type: [String],
-      required: true,
+      required: false,
       default: [],
     },
     timings: {
@@ -31,13 +31,13 @@ const busSchema = new Schema<IBusRoute>(
     intermediateStops: {
       type: [
         {
-          stopName: SCHEMA_DEFINATION_PROPERTIES.requiredString,
-          time: SCHEMA_DEFINATION_PROPERTIES.requiredString,
+          stopName: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
+          time: SCHEMA_DEFINATION_PROPERTIES.optionalNullString,
         },
       ],
       default: [],
     },
-    fare: SCHEMA_DEFINATION_PROPERTIES.requiredNumber,
+    fare: SCHEMA_DEFINATION_PROPERTIES.optionalNullNumber,
     createdBy: SCHEMA_DEFINATION_PROPERTIES.requiredString,
     creatorName: SCHEMA_DEFINATION_PROPERTIES.requiredString,
   },
@@ -45,3 +45,5 @@ const busSchema = new Schema<IBusRoute>(
 );
 
 export default busSchema;
+
+
