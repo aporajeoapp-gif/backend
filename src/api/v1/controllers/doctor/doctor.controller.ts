@@ -145,6 +145,7 @@ export const getDoctors = async (req: Request, res: Response) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const search = req.query.search as string;
+    const specialty = req.query.specialty as string;
     const sortBy = (req.query.sortBy as string) || 'createdAt';
     const sortOrder = (req.query.sortOrder as string) === 'asc' ? 1 : -1;
 
@@ -154,7 +155,11 @@ export const getDoctors = async (req: Request, res: Response) => {
         { name: { $regex: search, $options: "i" } },
         { specialty: { $regex: search, $options: "i" } },
         { location: { $regex: search, $options: "i" } },
+        { "medicalShopLocation.address": { $regex: search, $options: "i" } },
       ];
+    }
+    if (specialty) {
+      query.specialty = { $regex: `^${specialty.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" };
     }
 
     const skip = (page - 1) * limit;
