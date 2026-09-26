@@ -22,8 +22,8 @@ const ferrySchema = new Schema<IFerryRoute>(
     timings: {
       type: [
         {
-          departure: { type: String, required: true },
-          arrival: { type: String, required: true },
+          departure: { type: String, required: true, trim: true },
+          arrival: { type: String, required: true, trim: true },
         },
       ],
       required: true,
@@ -37,5 +37,6 @@ const ferrySchema = new Schema<IFerryRoute>(
 );
 
 export default ferrySchema;
+
 
 

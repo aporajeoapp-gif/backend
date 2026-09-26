@@ -4,6 +4,17 @@ import { AuthenticatedRequest } from "../../middleware/rbac.middleware";
 import UserModel from "../../../../models/user.model";
 import { createAuditLogFromRequest } from "../../../../utils/logger";
 
+const normalizeFerryTimings = (timings: any) => {
+  if (!Array.isArray(timings)) return [];
+
+  return timings
+    .map((timing) => ({
+      departure: String(timing?.departure || "").trim(),
+      arrival: String(timing?.arrival || "").trim(),
+    }))
+    .filter((timing) => timing.departure && timing.arrival);
+};
+
 export const createFerry = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { ferryName, routeName, stops, timings, fare } = req.body;
@@ -19,11 +30,13 @@ export const createFerry = async (req: AuthenticatedRequest, res: Response) => {
     }
 
     const creatorName = user.name;
+    const normalizedTimings = normalizeFerryTimings(timings);
+
     const newFerry = await FerryModel.create({
       ferryName,
       routeName,
       stops,
-      timings,
+      timings: normalizedTimings,
       fare,
       createdBy,
       creatorName,
@@ -111,6 +124,10 @@ export const updateFerry = async (req: AuthenticatedRequest, res: Response) => {
 
     const oldData = ferry.toObject();
 
+    if (updateData.timings !== undefined) {
+      updateData.timings = normalizeFerryTimings(updateData.timings);
+    }
+
     fieldsToUpdate.forEach((field) => {
       if (updateData[field] !== undefined) {
         (ferry as any)[field] = updateData[field];
@@ -183,4 +200,6 @@ export const deleteFerry = async (req: AuthenticatedRequest, res: Response) => {
     res.status(500).json({ message: "Failed to delete ferry route", error: error.message });
   }
 };
+
+
 
