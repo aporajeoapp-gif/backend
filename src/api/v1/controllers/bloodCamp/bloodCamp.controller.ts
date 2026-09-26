@@ -17,7 +17,7 @@ const normalizeCampStatus = async (camp: any) => {
 
 export const createBloodCamp = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { campName, organizer, date, time, location, address, city, bloodGroupsNeeded, contactPhone, contactEmail, description, targetUnits, collectedUnits } = req.body;
+    const { campName, organizer, date, time, location, address, city, bloodGroupsNeeded, contactPhone, contactEmail, description, targetUnits, collectedUnits, isPublished } = req.body;
 
     let banner_image = null;
     let organizationLogo = null;
@@ -63,6 +63,7 @@ export const createBloodCamp = async (req: AuthenticatedRequest, res: Response) 
       status: resolveBloodCampStatus(date),
       targetUnits,
       collectedUnits,
+      isPublished: isPublished === undefined ? true : isPublished === "true" || isPublished === true,
       createdBy: req.user?.userId,
     });
 
@@ -91,21 +92,36 @@ export const getBloodCamps = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
+
     const search = req.query.search as string;
     const status = req.query.status as string;
-    const sortBy = (req.query.sortBy as string) || 'date';
-    const sortOrder = (req.query.sortOrder as string) === 'desc' ? -1 : 1;
+
+    const sortBy = (req.query.sortBy as string) || "date";
+    const sortOrder =
+      (req.query.sortOrder as string) === "desc" ? -1 : 1;
 
     const query: any = {};
-    if (!req.headers.authorization) {
-      query.isPublished = true;
-    }
-    
+
     if (search) {
       query.$or = [
-        { campName: { $regex: search, $options: "i" } },
-        { location: { $regex: search, $options: "i" } },
-        { city: { $regex: search, $options: "i" } },
+        {
+          campName: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          location: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          city: {
+            $regex: search,
+            $options: "i",
+          },
+        },
       ];
     }
 
@@ -113,27 +129,36 @@ export const getBloodCamps = async (req: Request, res: Response) => {
       .sort({ [sortBy]: sortOrder })
       .exec();
 
-    const normalized = await Promise.all(camps.map((camp) => normalizeCampStatus(camp)));
+    const normalized = await Promise.all(
+      camps.map((camp) => normalizeCampStatus(camp))
+    );
+
     const filtered = status
       ? normalized.filter((camp) => camp.status === status)
       : normalized;
 
     const total = filtered.length;
+
     const skip = (page - 1) * limit;
+
     const result = filtered.slice(skip, skip + limit);
-    
-    res.status(200).json({
+
+    return res.status(200).json({
       data: result,
       pagination: {
         total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit)
-      }
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error: any) {
     console.error("Get Blood Camps Error:", error);
-    res.status(500).json({ message: "Failed to fetch blood camps", error: error.message });
+
+    return res.status(500).json({
+      message: "Failed to fetch blood camps",
+      error: error.message,
+    });
   }
 };
 
@@ -147,11 +172,7 @@ export const getBloodCampById = async (req: Request, res: Response) => {
 
     await normalizeCampStatus(camp);
 
-    // Fetch approved donors for this camp to show in public preview if published
-    let donors: any[] = [];
-    if (camp.isPublished) {
-      donors = await DonorModel.find({ campId: id, status: 'approved' }).sort({ createdAt: -1 });
-    }
+    const donors = await DonorModel.find({ campId: id, status: 'approved' }).sort({ createdAt: -1 });
 
     res.status(200).json({
       ...camp.toObject(),

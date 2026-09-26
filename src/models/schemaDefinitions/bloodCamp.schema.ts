@@ -37,7 +37,7 @@ const bloodCampSchema = new Schema<IBloodCamp>(
         },
         isPublished: {
             type: Boolean,
-            default: false
+            default: true
         },
         createdBy: SCHEMA_DEFINATION_PROPERTIES.requiredObjectId,
     },
